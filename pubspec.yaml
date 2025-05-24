@@ -1,0 +1,51 @@
+name: escrow_app
+description: A modern and minimal mobile app MVP for contract escrow system.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # Firebase Core
+  firebase_core: ^2.27.1
+  # Firebase Authentication
+  firebase_auth: ^4.17.9
+  # Cloud Firestore
+  cloud_firestore: ^4.15.9
+  # Firebase Storage
+  firebase_storage: ^11.6.10
+  # Firebase App Check
+  firebase_app_check: ^0.2.1+14
+  # Other dependencies
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.7
+  uuid: ^4.3.3
+  intl: ^0.19.0
+  share_plus: ^7.2.2
+  google_fonts: ^6.1.0
+  iconsax: ^0.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  # Uncomment this if you start using image assets
+  # assets:
+  #   - assets/images/
+
+  fonts:
+    - family: ProductSans
+      fonts:
+        - asset: assets/fonts/ProductSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ProductSans-Thin.ttf
+          weight: 100

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "252434664184",
+    "project_id": "escrow-app-7702f",
+    "storage_bucket": "escrow-app-7702f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252434664184:android:4d387b42905f1b7a30090d",
+        "android_client_info": {
+          "package_name": "com.example.escrow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAO5_6cBX3FDD78lW2I_EeQWYQrxrf47eo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
