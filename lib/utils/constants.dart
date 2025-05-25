@@ -1,52 +1,52 @@
 class AppConstants {
+  // Collections
+  static const String usersCollection = 'users';
+  static const String contractsCollection = 'contracts';
+  static const String depositsCollection = 'deposits';
+
   // Contract Status
   static const String dormant = 'dormant';
   static const String notFunded = 'not_funded';
-  static const String awaitingAdminApproval = 'awaiting_admin_approval';
   static const String active = 'active';
+  static const String completed = 'completed';
+  static const String rejected = 'rejected';
   static const String closed = 'closed';
   static const String terminated = 'terminated';
-  static const String declined = 'declined';
 
-  // Firebase Collections
-  static const String usersCollection = 'users';
-  static const String contractsCollection = 'contracts';
-
-  // App Constants
-  static const String appName = 'Escrow';
-  static const String appTagline = 'Secure Contracts Made Simple';
-  static const String appDescription = 'Create and manage secure escrow contracts with ease.';
-  
-  // Shared Preferences Keys
-  static const String userIdKey = 'userId';
-  static const String userPhoneKey = 'userPhone';
-  static const String isLoggedInKey = 'isLoggedIn';
-  static const String isOnboardingCompletedKey = 'isOnboardingCompleted';
-  
-  // Error Messages
-  static const String networkErrorMsg = 'Network error, please check your connection';
-  static const String authErrorMsg = 'Authentication failed';
-  static const String generalErrorMsg = 'Something went wrong, please try again';
-  
-  // Success Messages
-  static const String loginSuccessMsg = 'Login successful';
-  static const String registerSuccessMsg = 'Registration successful';
-  static const String contractCreatedMsg = 'Contract created successfully';
+  // Messages
   static const String contractAcceptedMsg = 'Contract accepted successfully';
   static const String contractDeclinedMsg = 'Contract declined';
+  static const String contractCompletedMsg = 'Task marked as completed';
+  static const String contractConfirmedMsg = 'Task completion confirmed';
+  static const String contractRejectedMsg = 'Task completion rejected';
+  static const String contractUpdatedMsg = 'Contract status updated';
   static const String paymentUploadedMsg = 'Payment proof uploaded successfully';
-  static const String withdrawalRequestedMsg = 'Withdrawal requested successfully';
-  static const String withdrawalConfirmedMsg = 'Withdrawal confirmed, funds released';
-  
-  // WhatsApp Invite Template
+  static const String insufficientBalanceMsg = 'Insufficient balance. Please recharge your account.';
+  static const String depositPendingMsg = 'Deposit request submitted. Waiting for admin approval.';
+  static const String depositApprovedMsg = 'Deposit approved. Balance updated.';
+  static const String depositRejectedMsg = 'Deposit rejected. Please contact support.';
+
+  // Mobile Money Numbers
+  static const Map<String, String> mobileMoneyNumbers = {
+    'Vodacom M-Pesa': '0755 123 456',
+    'Airtel Money': '0655 789 012',
+    'Tigo Pesa': '0655 345 678',
+  };
+
   static String generateInviteMessage({
     required String title,
     required double amount,
     required String contractId,
   }) {
-    return '''You've been invited to join a contract agreement on Escrow.
+    return '''
+🎉 New Contract Invitation
+
 Title: $title
-Amount: $amount TSh
-Tap to view & accept: https://escrow.app/invite/$contractId''';
+Amount: TSh ${amount.toStringAsFixed(2)}
+
+Please log in to your Escrow App to review and accept this contract.
+
+Contract ID: $contractId
+''';
   }
 }

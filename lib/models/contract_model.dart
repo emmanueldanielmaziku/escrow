@@ -1,103 +1,75 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/constants.dart';
-
 class ContractModel {
   final String id;
   final String title;
   final String description;
-  final double amount;
-  String status;
-  final String creatorId;
-  final String inviteeId;
-  final Timestamp createdAt;
-  Timestamp? acceptedAt;
-  String? proofOfPaymentUrl;
-  String? receiptNumber;
-  bool withdrawalRequested;
-  bool userAConfirmed;
+  final double reward;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String role;
+
+  // Benefactor information
+  final String? benefactorId;
+  final String? benefactorName;
+  final String? benefactorPhone;
+
+  // Beneficiary information
+  final String? beneficiaryId;
+  final String? beneficiaryName;
+  final String? beneficiaryPhone;
 
   ContractModel({
     required this.id,
     required this.title,
     required this.description,
-    required this.amount,
-    this.status = AppConstants.dormant,
-    required this.creatorId,
-    required this.inviteeId,
+    required this.reward,
+    required this.status,
     required this.createdAt,
-    this.acceptedAt,
-    this.proofOfPaymentUrl,
-    this.receiptNumber,
-    this.withdrawalRequested = false,
-    this.userAConfirmed = false,
+    required this.updatedAt,
+    required this.role,
+    this.benefactorId,
+    this.benefactorName,
+    this.benefactorPhone,
+    this.beneficiaryId,
+    this.beneficiaryName,
+    this.beneficiaryPhone,
   });
 
-  factory ContractModel.fromJson(Map<String, dynamic> json) {
-    return ContractModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      amount: (json['amount'] ?? 0.0).toDouble(),
-      status: json['status'] ?? AppConstants.dormant,
-      creatorId: json['creatorId'] ?? '',
-      inviteeId: json['inviteeId'] ?? '',
-      createdAt: json['createdAt'] ?? Timestamp.now(),
-      acceptedAt: json['acceptedAt'],
-      proofOfPaymentUrl: json['proofOfPaymentUrl'],
-      receiptNumber: json['receiptNumber'],
-      withdrawalRequested: json['withdrawalRequested'] ?? false,
-      userAConfirmed: json['userAConfirmed'] ?? false,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'description': description,
-      'amount': amount,
+      'reward': reward,
       'status': status,
-      'creatorId': creatorId,
-      'inviteeId': inviteeId,
-      'createdAt': createdAt,
-      'acceptedAt': acceptedAt,
-      'proofOfPaymentUrl': proofOfPaymentUrl,
-      'receiptNumber': receiptNumber,
-      'withdrawalRequested': withdrawalRequested,
-      'userAConfirmed': userAConfirmed,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'role': role,
+      'benefactorId': benefactorId,
+      'benefactorName': benefactorName,
+      'benefactorPhone': benefactorPhone,
+      'beneficiaryId': beneficiaryId,
+      'beneficiaryName': beneficiaryName,
+      'beneficiaryPhone': beneficiaryPhone,
     };
   }
 
-  // Helper method to create a copy with modified fields
-  ContractModel copyWith({
-    String? id,
-    String? title,
-    String? description,
-    double? amount,
-    String? status,
-    String? creatorId,
-    String? inviteeId,
-    Timestamp? createdAt,
-    Timestamp? acceptedAt,
-    String? proofOfPaymentUrl,
-    String? receiptNumber,
-    bool? withdrawalRequested,
-    bool? userAConfirmed,
-  }) {
+  factory ContractModel.fromMap(Map<String, dynamic> map) {
     return ContractModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      amount: amount ?? this.amount,
-      status: status ?? this.status,
-      creatorId: creatorId ?? this.creatorId,
-      inviteeId: inviteeId ?? this.inviteeId,
-      createdAt: createdAt ?? this.createdAt,
-      acceptedAt: acceptedAt ?? this.acceptedAt,
-      proofOfPaymentUrl: proofOfPaymentUrl ?? this.proofOfPaymentUrl,
-      receiptNumber: receiptNumber ?? this.receiptNumber,
-      withdrawalRequested: withdrawalRequested ?? this.withdrawalRequested,
-      userAConfirmed: userAConfirmed ?? this.userAConfirmed,
+      id: map['id'] as String,
+      title: map['title'] as String,
+      description: map['description'] as String,
+      reward: (map['reward'] as num).toDouble(),
+      status: map['status'] as String,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      role: map['role'] as String,
+      benefactorId: map['benefactorId'] as String?,
+      benefactorName: map['benefactorName'] as String?,
+      benefactorPhone: map['benefactorPhone'] as String?,
+      beneficiaryId: map['beneficiaryId'] as String?,
+      beneficiaryName: map['beneficiaryName'] as String?,
+      beneficiaryPhone: map['beneficiaryPhone'] as String?,
     );
   }
 }

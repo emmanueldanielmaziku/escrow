@@ -1,7 +1,5 @@
-import 'package:escrow_app/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_text_field.dart';
-import 'register_screen.dart';
 import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
@@ -15,15 +13,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _rememberMe = false;
-
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -39,8 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final userProvider = Provider.of<UserProvider>(context, listen: false);
 
         // Sign in user
-        final user = await authService.signInWithEmailAndPassword(
-          _emailController.text.trim(),
+        final user = await authService.signInWithPhoneAndPassword(
+          _phoneController.text.trim(),
           _passwordController.text,
         );
 
@@ -48,9 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
         userProvider.setUser(user);
 
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainScreen()),
-          );
+          Navigator.of(context).pushReplacementNamed('/home');
         }
       } catch (e) {
         if (mounted) {
@@ -124,19 +118,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           CustomTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                            hint: 'demo@gmail.com',
-                            keyboardType: TextInputType.emailAddress,
-                            prefixIcon: const Icon(Icons.email_outlined,
-                                color: Colors.grey),
+                            controller: _phoneController,
+                            label: 'Phone Number',
+                            hint: 'e.g. 0755123456',
+                            prefixIcon: const Icon(Icons.phone_outlined, color: Colors.grey),
+                            keyboardType: TextInputType.phone,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
+                                return 'Please enter your phone number';
                               }
-                              if (!value.contains('@') ||
-                                  !value.contains('.')) {
-                                return 'Please enter a valid email address';
+                              if (value.length < 10) {
+                                return 'Please enter a valid phone number';
                               }
                               return null;
                             },
@@ -146,9 +138,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _passwordController,
                             label: 'Password',
                             hint: '********',
+                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
                             obscureText: true,
-                            prefixIcon: const Icon(Icons.lock_outline,
-                                color: Colors.grey),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';
@@ -156,48 +147,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                activeColor: green,
-                                onChanged: (val) {
-                                  setState(() {
-                                    _rememberMe = val ?? false;
-                                  });
-                                },
-                              ),
-                              const Text('Remember me'),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () {
-                                  // TODO: Implement forgot password
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: green,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(0, 0),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: const Text('Forgot Password?'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            height: 48,
+                            height: 50,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: green,
-                                foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 0,
                               ),
                               child: _isLoading
                                   ? const SizedBox(
@@ -205,14 +165,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                            Colors.white),
                                       ),
                                     )
                                   : const Text(
-                                      'Sign in',
+                                      'Sign In',
                                       style: TextStyle(
+                                        color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -222,33 +182,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
-                          "Don't have an account? ",
+                          "Don't have an account?",
                           style: TextStyle(color: Colors.black54),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterScreen(),
-                              ),
-                            );
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/register');
                           },
                           child: const Text(
                             'Sign Up',
                             style: TextStyle(
-                              color: green,
+                              color: Color(0xFF22C55E),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),

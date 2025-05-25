@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/user_model.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,22 +27,67 @@ class AuthService {
       if (userId == null) return null;
 
       final doc = await _firestore.collection('users').doc(userId).get();
-      if (!doc.exists) return null;
+      if (!doc.exists) {
+        await signOut();
+        return null;
+      }
 
-      return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      
+      // Save user data to SharedPreferences
+      await _saveUserData(userData);
+      
+      return userData;
     } catch (e) {
       print('Error getting current user: $e');
+      await signOut();
       return null;
     }
   }
 
-  // Register with email and password
-  Future<UserModel> registerWithEmailAndPassword(
-      String email, String password, String fullName, String phone) async {
+  // Save user data to SharedPreferences
+  Future<void> _saveUserData(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userData', jsonEncode(user.toMap()));
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userId', user.id);
+  }
+
+  // Get stored user data
+  Future<UserModel?> getStoredUserData() async {
     try {
-      // Create user with email and password
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('userData');
+      if (userDataString != null) {
+        final userData = UserModel.fromMap(
+          jsonDecode(userDataString) as Map<String, dynamic>,
+        );
+        return userData;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting stored user data: $e');
+      return null;
+    }
+  }
+
+  // Register with phone number and password
+  Future<UserModel> registerWithPhoneAndPassword(
+      String fullName, String phone, String password) async {
+    try {
+      // Check if phone number already exists
+      final phoneQuery = await _firestore
+          .collection('users')
+          .where('phone', isEqualTo: phone)
+          .get();
+
+      if (phoneQuery.docs.isNotEmpty) {
+        throw Exception('Phone number already registered');
+      }
+
+      // Create user with phone number and password
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+        email: '$phone@escrow.app',
         password: password,
       );
 
@@ -49,15 +95,15 @@ class AuthService {
         throw Exception('Failed to create user');
       }
 
-      // Generate a unique wallet number (you can modify this logic)
+      // Generate a unique wallet number
       final walletNumber = 'W${DateTime.now().millisecondsSinceEpoch}';
 
       // Create user data
       final userData = UserModel(
         id: userCredential.user!.uid,
-        email: email,
         fullName: fullName,
         phone: phone,
+        email: '$phone@escrow.app',
         walletNumber: walletNumber,
         balance: 0.0,
         totalContracts: 0,
@@ -70,17 +116,15 @@ class AuthService {
           .doc(userCredential.user!.uid)
           .set(userData.toMap());
 
-      // Save login state
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userId', userCredential.user!.uid);
+      // Save user data to SharedPreferences
+      await _saveUserData(userData);
 
       return userData;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         throw Exception('The password provided is too weak.');
       } else if (e.code == 'email-already-in-use') {
-        throw Exception('The account already exists for that email.');
+        throw Exception('This phone number is already registered.');
       }
       throw Exception(e.message ?? 'An error occurred during registration');
     } catch (e) {
@@ -88,12 +132,12 @@ class AuthService {
     }
   }
 
-  // Sign in with email and password
-  Future<UserModel> signInWithEmailAndPassword(
-      String email, String password) async {
+  // Sign in with phone number and password
+  Future<UserModel> signInWithPhoneAndPassword(
+      String phone, String password) async {
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
+        email: '$phone@escrow.app',
         password: password,
       );
 
@@ -113,17 +157,15 @@ class AuthService {
 
       final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
 
-      // Save login state
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userId', userCredential.user!.uid);
+      // Save user data to SharedPreferences
+      await _saveUserData(userData);
 
       return userData;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw Exception('No user found for that email.');
+        throw Exception('No user found with this phone number.');
       } else if (e.code == 'wrong-password') {
-        throw Exception('Wrong password provided for that user.');
+        throw Exception('Wrong password provided.');
       }
       throw Exception(e.message ?? 'An error occurred during sign in');
     } catch (e) {
@@ -135,10 +177,11 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await _auth.signOut();
-      // Clear login state
+      // Clear login state and user data
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', false);
       await prefs.remove('userId');
+      await prefs.remove('userData');
     } catch (e) {
       throw Exception('Failed to sign out: $e');
     }
