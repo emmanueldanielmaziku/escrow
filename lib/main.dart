@@ -52,7 +52,6 @@ class EscrowEngine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF22C55E);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
@@ -62,7 +61,9 @@ class EscrowEngine extends StatelessWidget {
         title: 'Escrow App',
         theme: ThemeData(
           fontFamily: 'ProductSanReg',
-          colorScheme: ColorScheme.fromSeed(seedColor: green),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF22C55E),
+          ),
           useMaterial3: true,
         ),
         debugShowCheckedModeBanner: false,

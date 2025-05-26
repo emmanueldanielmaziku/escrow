@@ -4,6 +4,8 @@ import 'package:iconsax/iconsax.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../services/contract_service.dart';
+import '../services/user_service.dart';
+import '../models/user_model.dart';
 
 class CreateContractSheet extends StatefulWidget {
   const CreateContractSheet({super.key});
@@ -18,19 +20,33 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _rewardController = TextEditingController();
+  final _secondParticipantController = TextEditingController();
   bool _isLoading = false;
   final _contractService = ContractService();
+  final _userService = UserService();
+  UserModel? _selectedSecondParticipant;
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     _rewardController.dispose();
+    _secondParticipantController.dispose();
     super.dispose();
   }
 
   Future<void> _createContract() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedSecondParticipant == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a second participant'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
@@ -51,6 +67,9 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
           role: _selectedRole,
           userFullName: user.fullName,
           userPhone: user.phone,
+          secondParticipantId: _selectedSecondParticipant!.id,
+          secondParticipantName: _selectedSecondParticipant!.fullName,
+          secondParticipantPhone: _selectedSecondParticipant!.phone,
         );
 
         if (mounted) {
@@ -108,7 +127,10 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Icon(Iconsax.document_text, color: Color(0xFF22C55E)),
+                Icon(
+                  Iconsax.document_text,
+                  color: const Color(0xFF22C55E),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Create New Contract',
@@ -156,12 +178,142 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
                             if (value != null) {
                               setState(() {
                                 _selectedRole = value;
+                                _selectedSecondParticipant = null;
+                                _secondParticipantController.clear();
                               });
                             }
                           },
                         ),
                       ),
                     ),
+
+                    const SizedBox(height: 15),
+                    // Second Participant Search
+                    Text(
+                      '${_selectedRole == 'Benefactor' ? 'Beneficiary' : 'Benefactor'}\'s Phone Number',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: _secondParticipantController,
+                      label: 'Phone Number',
+                      hint: 'Enter phone number',
+                      prefixIcon: const Icon(Iconsax.user, color: Colors.grey),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSecondParticipant = null;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a phone number';
+                        }
+                        return null;
+                      },
+                    ),
+                    StreamBuilder<List<UserModel>>(
+                      stream: _userService.searchUsersByPhone(
+                          _secondParticipantController.text),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: snapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              final user = snapshot.data![index];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      const Color(0xFF22C55E).withOpacity(0.1),
+                                  child: Text(
+                                    user.fullName[0].toUpperCase(),
+                                    style: TextStyle(
+                                      color: const Color(0xFF22C55E),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(user.fullName),
+                                subtitle: Text(user.phone),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSecondParticipant = user;
+                                    _secondParticipantController.text =
+                                        user.phone;
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    if (_selectedSecondParticipant != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF22C55E).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor:
+                                  const Color(0xFF22C55E).withOpacity(0.2),
+                              child: Text(
+                                _selectedSecondParticipant!.fullName[0]
+                                    .toUpperCase(),
+                                style: TextStyle(
+                                  color: const Color(0xFF22C55E),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedSecondParticipant!.fullName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    _selectedSecondParticipant!.phone,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedSecondParticipant = null;
+                                  _secondParticipantController.clear();
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 15),
                     CustomTextField(

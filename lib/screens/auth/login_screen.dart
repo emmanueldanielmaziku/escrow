@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF22C55E);
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -77,23 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Placeholder logo
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: green,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'S',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 40,
-                          ),
-                        ),
-                      ),
+                   Image.asset(
+                      'assets/icons/green.png',
+                      scale: 30,
                     ),
                     const SizedBox(height: 32),
                     const Text(
@@ -121,7 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _phoneController,
                             label: 'Phone Number',
                             hint: 'e.g. 0755123456',
-                            prefixIcon: const Icon(Icons.phone_outlined, color: Colors.grey),
+                            prefixIcon: const Icon(Icons.phone_outlined,
+                                color: Colors.grey),
                             keyboardType: TextInputType.phone,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -138,7 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _passwordController,
                             label: 'Password',
                             hint: '********',
-                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                            prefixIcon: const Icon(Icons.lock_outline,
+                                color: Colors.grey),
                             obscureText: true,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -154,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: green,
+                                backgroundColor: const Color(0xFF22C55E),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -165,8 +153,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
                                     )
                                   : const Text(

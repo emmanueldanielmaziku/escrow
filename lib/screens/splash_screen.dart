@@ -50,10 +50,6 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
 
-      // If we get here, either:
-      // 1. User is not logged in
-      // 2. Stored data is invalid
-      // 3. Firestore verification failed
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
       }
@@ -69,13 +65,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+              Colors.white,
+              Colors.white,
             ],
           ),
         ),
@@ -84,51 +80,16 @@ class _SplashScreenState extends State<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // App Logo
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.handshake,
-                    size: 60,
-                    color: Color.fromARGB(255, 61, 114, 60),
-                  ),
-                ),
-              ),
+              Image.asset(
+                'assets/icons/green.png',
+              scale: 30,),
               const SizedBox(height: 24),
-              // App Name
-              const Text(
-                'Escrow App',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Tagline
-              Text(
-                'Secure Transactions Made Simple',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
+       
+       
               const SizedBox(height: 48),
               // Loading Indicator
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
               ),
             ],
           ),

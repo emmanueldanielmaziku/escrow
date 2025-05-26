@@ -37,7 +37,7 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF22C55E);
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -83,20 +83,20 @@ class CustomTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
                 color: Colors.grey[400]!,
-                width: 1.5,
+                width: 0.8,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
                 color: Colors.grey[400]!,
-                width: 1.5,
+                width: 0.8,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(
-                color: green,
+                color: Color(0xFF22C55E),
                 width: 2,
               ),
             ),
@@ -104,14 +104,14 @@ class CustomTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
                 color: Colors.red.withOpacity(0.7),
-                width: 1.5,
+                width: 0.8,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
                 color: Colors.red.withOpacity(0.7),
-                width: 2,
+                width: 1,
               ),
             ),
             errorStyle: TextStyle(

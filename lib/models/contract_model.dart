@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class ContractModel {
   final String id;
   final String title;
@@ -34,6 +36,52 @@ class ContractModel {
     this.beneficiaryName,
     this.beneficiaryPhone,
   });
+
+  static Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'non-active':
+        return Colors.orange;
+      case 'completed':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      case 'unfunded':
+        return Colors.orange;
+      case 'withdraw':
+        return Colors.purple;
+      case 'terminated':
+        return Colors.red;
+      case 'closed':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static String getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'Active';
+      case 'non-active':
+        return 'Inactive';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'unfunded':
+        return 'Unfunded';
+      case 'withdraw':
+        return 'Withdrawal Requested';
+      case 'terminated':
+        return 'Terminated';
+      case 'closed':
+        return 'Closed';
+      default:
+        return status;
+    }
+  }
 
   Map<String, dynamic> toMap() {
     return {

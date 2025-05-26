@@ -13,6 +13,9 @@ class ContractService {
     required String role,
     required String userFullName,
     required String userPhone,
+    required String secondParticipantId,
+    required String secondParticipantName,
+    required String secondParticipantPhone,
   }) async {
     try {
       // Create contract data with role-based user information
@@ -26,12 +29,16 @@ class ContractService {
         updatedAt: DateTime.now(),
         role: role,
         // Assign user information based on role
-        benefactorId: role == 'Benefactor' ? userId : null,
-        benefactorName: role == 'Benefactor' ? userFullName : null,
-        benefactorPhone: role == 'Benefactor' ? userPhone : null,
-        beneficiaryId: role == 'Beneficiary' ? userId : null,
-        beneficiaryName: role == 'Beneficiary' ? userFullName : null,
-        beneficiaryPhone: role == 'Beneficiary' ? userPhone : null,
+        benefactorId: role == 'Benefactor' ? userId : secondParticipantId,
+        benefactorName:
+            role == 'Benefactor' ? userFullName : secondParticipantName,
+        benefactorPhone:
+            role == 'Benefactor' ? userPhone : secondParticipantPhone,
+        beneficiaryId: role == 'Beneficiary' ? userId : secondParticipantId,
+        beneficiaryName:
+            role == 'Beneficiary' ? userFullName : secondParticipantName,
+        beneficiaryPhone:
+            role == 'Beneficiary' ? userPhone : secondParticipantPhone,
       );
 
       // Save to Firestore
@@ -65,7 +72,7 @@ class ContractService {
 
       // Determine which role to assign based on existing role
       final updates = <String, dynamic>{
-        'status': 'active',
+        'status': 'unfunded',
         'updatedAt': DateTime.now().toIso8601String(),
       };
 
@@ -85,6 +92,7 @@ class ContractService {
         });
       }
 
+      // Update the contract in Firestore
       await contractRef.update(updates);
     } catch (e) {
       throw Exception('Failed to accept contract: $e');
@@ -103,8 +111,7 @@ class ContractService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) =>
-              ContractModel.fromMap(doc.data() as Map<String, dynamic>))
+          .map((doc) => ContractModel.fromMap(doc.data()))
           .toList();
     });
   }
@@ -123,8 +130,7 @@ class ContractService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) =>
-              ContractModel.fromMap(doc.data() as Map<String, dynamic>))
+          .map((doc) => ContractModel.fromMap(doc.data()))
           .toList();
     });
   }
@@ -149,11 +155,63 @@ class ContractService {
   // Get contract details
   Future<ContractModel?> getContractDetails(String contractId) async {
     try {
-      final doc = await _firestore.collection('contracts').doc(contractId).get();
+      final doc =
+          await _firestore.collection('contracts').doc(contractId).get();
       if (!doc.exists) return null;
       return ContractModel.fromMap(doc.data()!);
     } catch (e) {
       throw Exception('Failed to get contract details: $e');
     }
+  }
+
+  // Delete contract
+  Future<void> deleteContract(String contractId) async {
+    try {
+      await _firestore.collection('contracts').doc(contractId).delete();
+    } catch (e) {
+      throw Exception('Failed to delete contract: $e');
+    }
+  }
+
+  // Update contract status
+  Future<void> updateContractStatus(String contractId, String newStatus) async {
+    try {
+      await _firestore.collection('contracts').doc(contractId).update({
+        'status': newStatus,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update contract status: $e');
+    }
+  }
+
+  // Terminate contract
+  Future<void> terminateContract(String contractId) async {
+    await updateContractStatus(contractId, 'terminated');
+  }
+
+  // Request withdrawal
+  Future<void> requestWithdrawal(String contractId) async {
+    await updateContractStatus(contractId, 'withdraw');
+  }
+
+  // Confirm withdrawal
+  Future<void> confirmWithdrawal(String contractId) async {
+    await updateContractStatus(contractId, 'completed');
+  }
+
+  // Decline withdrawal request
+  Future<void> declineWithdrawal(String contractId) async {
+    await updateContractStatus(contractId, 'active');
+  }
+
+  // Approve termination
+  Future<void> approveTermination(String contractId) async {
+    await updateContractStatus(contractId, 'closed');
+  }
+
+  // Close contract
+  Future<void> closeContract(String contractId) async {
+    await updateContractStatus(contractId, 'closed');
   }
 }

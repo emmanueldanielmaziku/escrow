@@ -79,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF22C55E);
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -99,23 +99,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const SizedBox(height: 20),
               // Logo
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: green,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Text(
-                    'S',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 40,
-                    ),
-                  ),
-                ),
+           Image.asset(
+                'assets/icons/green.png',
+                scale: 30,
               ),
               const SizedBox(height: 24),
               const Text(
@@ -216,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _acceptTerms = value ?? false;
                             });
                           },
-                          activeColor: green,
+                          activeColor: const Color(0xFF22C55E),
                         ),
                         Expanded(
                           child: Text(
@@ -236,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: green,
+                          backgroundColor: const Color(0xFF22C55E),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),

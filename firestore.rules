@@ -27,5 +27,13 @@ service cloud.firestore {
       allow update: if isAuthenticated();
       allow delete: if isAuthenticated();
     }
+
+    // Deposits collection rules
+    match /deposits/{depositId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false; // Deposits cannot be deleted
+    }
   }
 }

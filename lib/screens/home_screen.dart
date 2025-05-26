@@ -6,7 +6,12 @@ import 'package:iconsax/iconsax.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
+import '../services/contract_service.dart';
 import '../widgets/create_contract_sheet.dart';
+import '../widgets/contract_card.dart';
+import '../models/contract_model.dart';
+import '../screens/create_contract_screen.dart';
+import '../screens/fund_contract_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +23,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _sortOrder = 'latest';
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
+  final ValueNotifier<bool> _isScrolledNotifier = ValueNotifier<bool>(false);
+  final _contractService = ContractService();
 
   @override
   void initState() {
@@ -30,28 +36,86 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _isScrolledNotifier.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.offset > 0 && !_isScrolled) {
-      setState(() {
-        _isScrolled = true;
-      });
-    } else if (_scrollController.offset <= 0 && _isScrolled) {
-      setState(() {
-        _isScrolled = false;
-      });
+    if (_scrollController.offset > 0 && !_isScrolledNotifier.value) {
+      _isScrolledNotifier.value = true;
+    } else if (_scrollController.offset <= 0 && _isScrolledNotifier.value) {
+      _isScrolledNotifier.value = false;
     }
   }
 
   void _showCreateContractSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const CreateContractSheet(),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CreateContractScreen(),
+      ),
     );
+  }
+
+  Future<void> _handleDeleteContract(ContractModel contract) async {
+    try {
+      // Show confirmation dialog
+      final shouldDelete = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Contract'),
+          content: const Text(
+            'Are you sure you want to delete this contract? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDelete == true) {
+        // Show loading indicator
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Deleting contract...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+
+        // Delete the contract
+        await _contractService.deleteContract(contract.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Contract deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting contract: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -60,272 +124,478 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      floatingActionButton: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: _isScrolled ? 56 : 180,
-        height: 56,
-        child: FloatingActionButton.extended(
-          onPressed: _showCreateContractSheet,
-          backgroundColor: theme.colorScheme.primary,
-          icon: const Icon(Iconsax.add_circle, color: Colors.white),
-          label: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: _isScrolled ? 0.0 : 1.0,
-            child: const Text(
-              'New Contract',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateContractSheet,
+        backgroundColor: Colors.green,
+        elevation: 4,
+        child: const Icon(
+          Iconsax.add_circle,
+          color: Colors.white,
+          size: 24,
         ),
       ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color.fromARGB(255, 61, 114, 60),
-                    theme.colorScheme.primary.withOpacity(1.0),
-                    theme.colorScheme.primary.withOpacity(0.9),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
+      body: Column(
+        children: [
+          // Fixed Header Section
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.green,
+                  Colors.green,
+                  Colors.green
+                ],
               ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome,',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              userProvider.user?.fullName ?? 'User',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                                image: const DecorationImage(
-                                    image: NetworkImage(
-                                        "https://avatar.iran.liara.run/public"))),
-
-                            // child: Center(
-                            //   child: Text(
-                            //     (userProvider.user?.fullName ?? 'U')[0]
-                            //         .toUpperCase(),
-                            //     style: const TextStyle(
-                            //       color: Colors.white,
-                            //       fontSize: 18,
-                            //       fontWeight: FontWeight.bold,
-                            //     ),
-                            //   ),
-                            // ),
-                          ),
-                          const SizedBox(width: 12),
-                          IconButton.outlined(
-                            style: IconButton.styleFrom(
-                              side: const BorderSide(
-                                  color: Color.fromARGB(255, 151, 209, 161)),
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                          Text(
+                            'Welcome,',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.8),
                             ),
-                            onPressed: () async {
-                              try {
-                                final authService = Provider.of<AuthService>(
-                                    context,
-                                    listen: false);
-                                final userProvider = Provider.of<UserProvider>(
-                                    context,
-                                    listen: false);
-
-                                // Clear user data from provider
-                                userProvider.clearUser();
-
-                                // Sign out from auth service
-                                await authService.signOut();
-
-                                if (context.mounted) {
-                                  // Navigate to login screen
-                                  Navigator.of(context).pushNamedAndRemoveUntil(
-                                    '/',
-                                    (route) => false,
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error signing out: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: const Icon(
-                              Iconsax.logout,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userProvider.user?.fullName ?? 'User',
+                            style: theme.textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  // Total Contracts Card
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('contracts')
-                        .where('userId', isEqualTo: userProvider.user?.id)
-                        .orderBy('createdAt',
-                            descending: _sortOrder == 'latest')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      final totalContracts = snapshot.data?.docs.length ?? 0;
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            image: const DecorationImage(
+                              image: NetworkImage(
+                                "https://avatar.iran.liara.run/public",
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    theme.colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Iconsax.document_text,
-                                color: theme.colorScheme.primary,
-                                size: 20,
-                              ),
+                        const SizedBox(width: 12),
+                        IconButton.outlined(
+                          style: IconButton.styleFrom(
+                            side: const BorderSide(
+                              color: Color.fromARGB(255, 151, 209, 161),
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              totalContracts.toString(),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              ' Contracts',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.7),
-                              ),
-                            ),
-                            const Spacer(),
-                            PopupMenuButton<String>(
-                              icon: Icon(
-                                Iconsax.sort,
-                                color: theme.colorScheme.primary,
-                                size: 20,
-                              ),
-                              onSelected: (String value) {
-                                setState(() {
-                                  _sortOrder = value;
-                                });
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                PopupMenuItem<String>(
-                                  value: 'latest',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Iconsax.arrow_down_1,
-                                        size: 18,
-                                        color: _sortOrder == 'latest'
-                                            ? theme.colorScheme.primary
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text('Latest First'),
-                                    ],
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                          ),
+                          onPressed: () async {
+                            try {
+                              final authService = Provider.of<AuthService>(
+                                context,
+                                listen: false,
+                              );
+                              final userProvider = Provider.of<UserProvider>(
+                                context,
+                                listen: false,
+                              );
+
+                              // Clear user data from provider
+                              userProvider.clearUser();
+
+                              // Sign out from auth service
+                              await authService.signOut();
+
+                              if (context.mounted) {
+                                // Navigate to login screen
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/',
+                                  (route) => false,
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error signing out: $e'),
+                                    backgroundColor: Colors.red,
                                   ),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'oldest',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Iconsax.arrow_up_1,
-                                        size: 18,
-                                        color: _sortOrder == 'oldest'
-                                            ? theme.colorScheme.primary
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text('Oldest First'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(
+                            Iconsax.logout,
+                            color: Colors.white,
+                          ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                // Total Contracts Card
+                StreamBuilder<List<ContractModel>>(
+                  stream: _contractService.getAuthenticatedUserContracts(
+                    userProvider.user?.id ?? '',
                   ),
-                ],
-              ),
+                  builder: (context, snapshot) {
+                    final totalContracts = snapshot.data?.length ?? 0;
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Iconsax.document_text,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            totalContracts.toString(),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Total Contracts',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            icon: Icon(
+                              Iconsax.sort,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                            onSelected: (String value) {
+                              setState(() {
+                                _sortOrder = value;
+                              });
+                            },
+                            itemBuilder: (BuildContext context) => [
+                              PopupMenuItem<String>(
+                                value: 'latest',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.arrow_down_1,
+                                      size: 18,
+                                      color: _sortOrder == 'latest'
+                                          ? theme.colorScheme.primary
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Latest First'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'oldest',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.arrow_up_1,
+                                      size: 18,
+                                      color: _sortOrder == 'oldest'
+                                          ? theme.colorScheme.primary
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Oldest First'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Scrollable Contracts List Section
+          Expanded(
+            child: StreamBuilder<List<ContractModel>>(
+              stream: _contractService.getAuthenticatedUserContracts(
+                userProvider.user?.id ?? '',
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                final contracts = snapshot.data ?? [];
+
+                if (contracts.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Iconsax.document_text,
+                          size: 64,
+                          color: theme.colorScheme.primary.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No contracts yet',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Create your first contract by \ntapping the button below',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: contracts.length,
+                  itemBuilder: (context, index) {
+                    final contract = contracts[index];
+                    return ContractCard(
+                      contract: contract,
+                      onFundContract: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FundContractScreen(
+                              contract: contract,
+                            ),
+                          ),
+                        );
+                      },
+                      onRequestWithdrawal: () async {
+                        try {
+                          await _contractService.requestWithdrawal(contract.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Withdrawal requested successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Error requesting withdrawal: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onDeleteContract: () => _handleDeleteContract(contract),
+                      onAcceptInvitation: () async {
+                        try {
+                          final userProvider =
+                              Provider.of<UserProvider>(context, listen: false);
+                          final user = userProvider.user;
+
+                          if (user == null) {
+                            throw Exception('User not found');
+                          }
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Accepting invitation...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
+
+                          await _contractService.acceptContract(
+                            contractId: contract.id,
+                            userId: user.id,
+                            userFullName: user.fullName,
+                            userPhone: user.phone,
+                          );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Contract accepted successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error accepting contract: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onTerminateContract: () async {
+                        try {
+                          await _contractService.terminateContract(contract.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Contract terminated successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error terminating contract: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onConfirmWithdrawal: () async {
+                        try {
+                          await _contractService.confirmWithdrawal(contract.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Withdrawal confirmed successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Error confirming withdrawal: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onDeclineWithdrawal: () async {
+                        try {
+                          await _contractService.declineWithdrawal(contract.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Withdrawal request declined'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error declining withdrawal: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      onApproveTermination: () async {
+                        try {
+                          await _contractService
+                              .approveTermination(contract.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('Termination approved successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Error approving termination: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
-
-
-// Based on the contract model lets create a Contrcact Card , theat will have a :
-// 1. Title with a contract icon on its left.. 
-// 2. Below will have contract Description ,
-// 3. Time last modified and Time last created 
-// 4. Status
-// 5 Action button (Action buttons will be visible based on the status) where as we will have the following set of action buttons 
-//      1. Fund Contract (This will be visible to the Benefactor )
-

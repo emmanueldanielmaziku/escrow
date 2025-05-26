@@ -39,8 +39,8 @@ flutter:
   uses-material-design: true
 
   # Uncomment this if you start using image assets
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/icons/
 
   fonts:
     - family: ProductSans
