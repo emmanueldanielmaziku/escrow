@@ -24,10 +24,10 @@ class _FundContractScreenState extends State<FundContractScreen> {
   bool _isLoading = false;
 
   final Map<String, String> _paymentProviders = {
-    'TIGO': '864706',
-    'SELCOM': '61135943',
-    'HALOTEL': '678387',
-    'NMB': '21262098',
+    'Mix by Yas Agent': '864706',
+    'Selcom Agent': '61135943',
+    'Halopesa': '678387',
+    'NMB Lipa Namba': '21262098',
   };
 
   @override
@@ -80,6 +80,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
         contractId: widget.contract.id,
         userId: user.id,
         provider: _selectedProvider!,
+        contractFund: widget.contract.reward.toString(),
         controlNumber: _paymentProviders[_selectedProvider]!,
         paymentMessage: _paymentMessageController.text,
       );
@@ -124,9 +125,42 @@ class _FundContractScreenState extends State<FundContractScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Contract Amount Display
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Contract Amount:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'TSh ${widget.contract.reward.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Title/Instruction
             Text(
-              'Choose your payment gateway',
+              'Gateway Name: Mai Money',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -193,7 +227,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Control Number: ${entry.value}',
+                                entry.value,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey[600],
                                 ),

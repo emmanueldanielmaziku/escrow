@@ -7,6 +7,7 @@ class DepositService {
   Future<DepositModel> createDeposit({
     required String contractId,
     required String userId,
+    required String contractFund,
     required String provider,
     required String controlNumber,
     required String paymentMessage,
@@ -17,6 +18,7 @@ class DepositService {
         contractId: contractId,
         userId: userId,
         provider: provider,
+        contractFund: contractFund,
         controlNumber: controlNumber,
         paymentMessage: paymentMessage,
         createdAt: DateTime.now(),
