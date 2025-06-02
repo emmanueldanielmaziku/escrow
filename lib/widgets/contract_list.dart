@@ -7,10 +7,10 @@ class ContractList extends StatelessWidget {
   final ContractService contractService;
 
   const ContractList({
-    Key? key,
+    super.key,
     required this.userId,
     required this.contractService,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -40,6 +40,8 @@ class ContractCard extends StatelessWidget {
 
     final isBenefactor = contract.benefactorId == userProvider.user?.id;
     final isBeneficiary = contract.beneficiaryId == userProvider.user?.id;
+    
+  
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -73,6 +75,7 @@ class ContractCard extends StatelessWidget {
                     color: ContractModel.getStatusColor(contract.status)
                         .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: ContractModel.getStatusColor(contract.status), width: 0.5),
                   ),
                   child: Text(
                     ContractModel.getStatusText(contract.status),
@@ -89,6 +92,7 @@ class ContractCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.primary, width: 0.5),
                   ),
                   child: Text(
                     currencyFormat.format(contract.reward),
@@ -138,7 +142,7 @@ class ContractCard extends StatelessWidget {
                 color: Colors.grey[50],
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.grey[100]!,
+                  color: Colors.grey[300]!,
                   width: 1,
                 ),
               ),
@@ -191,7 +195,7 @@ class ContractCard extends StatelessWidget {
                   Container(
                     height: 40,
                     width: 1,
-                    color: Colors.grey[200],
+                    color: Colors.grey[300],
                   ),
                   // Beneficiary
                   Expanded(
@@ -246,7 +250,7 @@ class ContractCard extends StatelessWidget {
             // Action Buttons
             if (contract.status == 'non-active') ...[
               const SizedBox(height: 16),
-              if (isBenefactor)
+              if (isBenefactor && contract.role == 'Benefactor')
                 Row(
                   children: [
                     Expanded(
@@ -266,7 +270,44 @@ class ContractCard extends StatelessWidget {
                     ),
                   ],
                 )
-              else if (isBeneficiary)
+                else if (isBeneficiary && contract.role == 'Beneficiary')
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onDeleteContract,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Delete Contract'),
+                      ),
+                    ),
+                  ],
+                )
+              else if (isBeneficiary && contract.role == 'Benefactor')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onAcceptInvitation,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Accept Invitation'),
+                  ),
+                )
+                     else if (isBenefactor && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -285,7 +326,7 @@ class ContractCard extends StatelessWidget {
                 ),
             ] else if (contract.status == 'unfunded') ...[
               const SizedBox(height: 16),
-              if (isBenefactor)
+              if (isBenefactor && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -303,7 +344,42 @@ class ContractCard extends StatelessWidget {
                     label: const Text('Fund Contract'),
                   ),
                 )
-              else if (isBeneficiary)
+                     else if (isBenefactor && contract.role == 'Benefactor')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onFundContract,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.account_balance_wallet_outlined,
+                        size: 18),
+                    label: const Text('Fund Contract'),
+                  ),
+                )
+              else if (isBeneficiary && contract.role == 'Benefactor')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[300],
+                      foregroundColor: Colors.grey[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.hourglass_empty, size: 18),
+                    label: const Text('Wait for contract to be funded'),
+                  ),
+                )
+                  else if (isBeneficiary && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

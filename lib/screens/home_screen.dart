@@ -1,13 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:escrow_app/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
 import '../services/contract_service.dart';
-import '../widgets/create_contract_sheet.dart';
 import '../widgets/contract_card.dart';
 import '../models/contract_model.dart';
 import '../screens/create_contract_screen.dart';
@@ -143,11 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.green,
-                  Colors.green,
-                  Colors.green
-                ],
+                colors: [Colors.green, Colors.green, Colors.green],
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(32),
@@ -159,90 +154,103 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome,',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            userProvider.user?.fullName ?? 'User',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Row(
+                        child: Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                "https://avatar.iran.liara.run/public",
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const ProfileScreen()),
+                            );
+                          },
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white, width: 3),
+                              color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                              image: const DecorationImage(
+                                image: NetworkImage(
+                                  "https://avatar.iran.liara.run/public",
+                                ),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        IconButton.outlined(
-                          style: IconButton.styleFrom(
-                            side: const BorderSide(
-                              color: Color.fromARGB(255, 151, 209, 161),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome,',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontSize: 16.0,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
                             ),
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                          ),
-                          onPressed: () async {
-                            try {
-                              final authService = Provider.of<AuthService>(
-                                context,
-                                listen: false,
-                              );
-                              final userProvider = Provider.of<UserProvider>(
-                                context,
-                                listen: false,
-                              );
-
-                              // Clear user data from provider
-                              userProvider.clearUser();
-
-                              // Sign out from auth service
-                              await authService.signOut();
-
-                              if (context.mounted) {
-                                // Navigate to login screen
-                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                  '/',
-                                  (route) => false,
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error signing out: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          icon: const Icon(
-                            Iconsax.logout,
-                            color: Colors.white,
-                          ),
+                            Text(
+                              userProvider.user?.fullName ?? 'User',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
+                    )),
+                    IconButton.outlined(
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        side: const BorderSide(
+                          color: Color.fromARGB(255, 151, 209, 161),
+                        ),
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                      ),
+                      onPressed: () async {
+                        try {
+                          final authService = Provider.of<AuthService>(
+                            context,
+                            listen: false,
+                          );
+                          final userProvider = Provider.of<UserProvider>(
+                            context,
+                            listen: false,
+                          );
+
+                          // Clear user data from provider
+                          userProvider.clearUser();
+
+                          // Sign out from auth service
+                          await authService.signOut();
+
+                          if (context.mounted) {
+                            // Navigate to login screen
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/',
+                              (route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error signing out: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(
+                        Iconsax.logout,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -276,6 +284,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
+                              border: Border.all(
+                                  color:
+                                      const Color.fromARGB(198, 100, 202, 103),
+                                  width: 0.5),
                               color: theme.colorScheme.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -376,6 +388,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 final contracts = snapshot.data ?? [];
+
+                // Sort contracts based on _sortOrder
+                contracts.sort((a, b) {
+                  if (_sortOrder == 'latest') {
+                    return b.createdAt.compareTo(a.createdAt);
+                  } else {
+                    return a.createdAt.compareTo(b.createdAt);
+                  }
+                });
 
                 if (contracts.isEmpty) {
                   return Center(

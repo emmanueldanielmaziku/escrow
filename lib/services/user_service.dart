@@ -13,7 +13,7 @@ class UserService {
     return _firestore
         .collection('users')
         .where('phone', isGreaterThanOrEqualTo: phoneNumber)
-        .where('phone', isLessThanOrEqualTo: phoneNumber + '\uf8ff')
+        .where('phone', isLessThanOrEqualTo: '$phoneNumber\uf8ff')
         .limit(5)
         .snapshots()
         .map((snapshot) {

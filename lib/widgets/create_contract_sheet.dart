@@ -127,9 +127,9 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Iconsax.document_text,
-                  color: const Color(0xFF22C55E),
+                  color: Color(0xFF22C55E),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -237,8 +237,8 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
                                       const Color(0xFF22C55E).withOpacity(0.1),
                                   child: Text(
                                     user.fullName[0].toUpperCase(),
-                                    style: TextStyle(
-                                      color: const Color(0xFF22C55E),
+                                    style: const TextStyle(
+                                      color: Color(0xFF22C55E),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -274,8 +274,8 @@ class _CreateContractSheetState extends State<CreateContractSheet> {
                               child: Text(
                                 _selectedSecondParticipant!.fullName[0]
                                     .toUpperCase(),
-                                style: TextStyle(
-                                  color: const Color(0xFF22C55E),
+                                style: const TextStyle(
+                                  color: Color(0xFF22C55E),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
