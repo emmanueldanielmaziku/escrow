@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:escrow_app/services/notification.dart';
+import 'package:flutter/foundation.dart';
 import '../models/contract_model.dart';
 
 class ContractService {
@@ -18,7 +20,6 @@ class ContractService {
     required String secondParticipantPhone,
   }) async {
     try {
-      // Create contract data with role-based user information
       final contractData = ContractModel(
         id: _firestore.collection('contracts').doc().id,
         title: title,
@@ -28,7 +29,6 @@ class ContractService {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         role: role,
-        // Assign user information based on role
         benefactorId: role == 'Benefactor' ? userId : secondParticipantId,
         benefactorName:
             role == 'Benefactor' ? userFullName : secondParticipantName,
@@ -47,9 +47,26 @@ class ContractService {
           .doc(contractData.id)
           .set(contractData.toMap());
 
+      final receiverDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(secondParticipantId)
+          .get();
+
+      final receiverToken = receiverDoc['deviceToken'];
+
+      await sendFCMV1Notification(
+        fcmToken: receiverToken,
+        title: 'New Contract',
+        body: 'You just received a contract from Emma!',
+      );
+
       return contractData;
     } catch (e) {
+       if (kDebugMode) {
+         print(e);
+       }
       throw Exception('Failed to create contract: $e');
+     
     }
   }
 

@@ -1,14 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
-import 'package:uuid/uuid.dart';
+
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final _uuid = const Uuid();
+
 
   // Get current user ID
   String? getCurrentUserId() {
@@ -133,45 +134,53 @@ class AuthService {
   }
 
   // Sign in with phone number and password
-  Future<UserModel> signInWithPhoneAndPassword(
-      String phone, String password) async {
-    try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: '$phone@escrow.app',
-        password: password,
-      );
 
-      if (userCredential.user == null) {
-        throw Exception('Failed to sign in');
-      }
+Future<UserModel> signInWithPhoneAndPassword(
+    String phone, String password) async {
+  try {
+    final userCredential = await _auth.signInWithEmailAndPassword(
+      email: '$phone@escrow.app',
+      password: password,
+    );
 
-      // Get user data from Firestore
-      final doc = await _firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
-
-      if (!doc.exists) {
-        throw Exception('User data not found');
-      }
-
-      final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
-
-      // Save user data to SharedPreferences
-      await _saveUserData(userData);
-
-      return userData;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        throw Exception('No user found with this phone number.');
-      } else if (e.code == 'wrong-password') {
-        throw Exception('Wrong password provided.');
-      }
-      throw Exception(e.message ?? 'An error occurred during sign in');
-    } catch (e) {
-      throw Exception('Failed to sign in: $e');
+    if (userCredential.user == null) {
+      throw Exception('Failed to sign in');
     }
+
+    final uid = userCredential.user!.uid;
+
+    // Fetch device token
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+
+    // Update Firestore with the device token
+    await _firestore.collection('users').doc(uid).update({
+      'deviceToken': fcmToken,
+    });
+
+    // Get updated user data
+    final doc = await _firestore.collection('users').doc(uid).get();
+
+    if (!doc.exists) {
+      throw Exception('User data not found');
+    }
+
+    final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+
+    // Save user data locally
+    await _saveUserData(userData);
+
+    return userData;
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'user-not-found') {
+      throw Exception('No user found with this phone number.');
+    } else if (e.code == 'wrong-password') {
+      throw Exception('Wrong password provided.');
+    }
+    throw Exception(e.message ?? 'An error occurred during sign in');
+  } catch (e) {
+    throw Exception('Failed to sign in: $e');
   }
+}
 
   // Sign out
   Future<void> signOut() async {
@@ -197,12 +206,5 @@ class AuthService {
   Future<String?> getStoredUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('userId');
-  }
-
-  String _generateWalletNumber() {
-    // Generate a unique 10-digit wallet number
-    final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    final String random = _uuid.v4().substring(0, 6);
-    return '${timestamp.substring(timestamp.length - 4)}$random';
   }
 }
