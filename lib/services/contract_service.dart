@@ -56,8 +56,8 @@ class ContractService {
 
       await sendFCMV1Notification(
         fcmToken: receiverToken,
-        title: 'New Contract',
-        body: 'You just received a contract from Emma!',
+        title: contractData.title,
+        body: contractData.description,
       );
 
       return contractData;
