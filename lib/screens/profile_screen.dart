@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
 import 'terms_conditions_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -328,9 +329,11 @@ class ProfileScreen extends StatelessWidget {
                         'Update your password',
                         Iconsax.lock,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Change password coming soon!'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ChangePasswordScreen(),
                             ),
                           );
                         },

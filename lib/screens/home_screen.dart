@@ -11,6 +11,7 @@ import '../widgets/contract_card.dart';
 import '../models/contract_model.dart';
 import '../screens/create_contract_screen.dart';
 import '../screens/fund_contract_screen.dart';
+import '../utils/custom_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -85,11 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
       if (shouldDelete == true) {
         // Show loading indicator
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Deleting contract...'),
-              duration: Duration(seconds: 1),
-            ),
+          CustomSnackBar.show(
+            context: context,
+            message: 'Deleting contract...',
+            type: SnackBarType.info,
+            duration: const Duration(seconds: 1),
           );
         }
 
@@ -97,21 +98,124 @@ class _HomeScreenState extends State<HomeScreen> {
         await _contractService.deleteContract(contract.id);
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contract deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
+          CustomSnackBar.show(
+            context: context,
+            message: 'Contract deleted successfully',
+            type: SnackBarType.success,
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting contract: $e'),
-            backgroundColor: Colors.red,
-          ),
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error deleting contract: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRequestWithdrawal(ContractModel contract) async {
+    try {
+      await _contractService.requestWithdrawal(contract.id);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal requested successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error requesting withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleTerminateContract(ContractModel contract) async {
+    try {
+      await _contractService.terminateContract(contract.id);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contract terminated successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error terminating contract: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleConfirmWithdrawal(ContractModel contract) async {
+    try {
+      await _contractService.confirmWithdrawal(contract.id);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal confirmed successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error confirming withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeclineWithdrawal(ContractModel contract) async {
+    try {
+      await _contractService.declineWithdrawal(contract.id);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal declined successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error declining withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleApproveTermination(ContractModel contract) async {
+    try {
+      await _contractService.approveTermination(contract.id);
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contract termination approved successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error approving termination: $e',
+          type: SnackBarType.error,
         );
       }
     }
@@ -203,7 +307,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     )),
                     IconButton(
-
                       onPressed: () async {
                         try {
                           final authService = Provider.of<AuthService>(
@@ -230,11 +333,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error signing out: $e'),
-                                backgroundColor: Colors.red,
-                              ),
+                            CustomSnackBar.show(
+                              context: context,
+                              message: 'Error signing out: $e',
+                              type: SnackBarType.error,
                             );
                           }
                         }
@@ -427,6 +529,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final contract = contracts[index];
                     return ContractCard(
                       contract: contract,
+                      onDeleteContract: () => _handleDeleteContract(contract),
                       onFundContract: () {
                         Navigator.push(
                           context,
@@ -438,30 +541,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       onRequestWithdrawal: () async {
-                        try {
-                          await _contractService.requestWithdrawal(contract.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Withdrawal requested successfully'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Error requesting withdrawal: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        await _handleRequestWithdrawal(contract);
                       },
-                      onDeleteContract: () => _handleDeleteContract(contract),
                       onAcceptInvitation: () async {
                         try {
                           final userProvider =
@@ -473,11 +554,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
 
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Accepting invitation...'),
-                                duration: Duration(seconds: 1),
-                              ),
+                            CustomSnackBar.show(
+                              context: context,
+                              message: 'Accepting invitation...',
+                              type: SnackBarType.info,
+                              duration: const Duration(seconds: 1),
                             );
                           }
 
@@ -489,117 +570,33 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
 
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Contract accepted successfully'),
-                                backgroundColor: Colors.green,
-                              ),
+                            CustomSnackBar.show(
+                              context: context,
+                              message: 'Contract accepted successfully',
+                              type: SnackBarType.success,
                             );
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error accepting contract: $e'),
-                                backgroundColor: Colors.red,
-                              ),
+                            CustomSnackBar.show(
+                              context: context,
+                              message: 'Error accepting contract: $e',
+                              type: SnackBarType.error,
                             );
                           }
                         }
                       },
                       onTerminateContract: () async {
-                        try {
-                          await _contractService.terminateContract(contract.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Contract terminated successfully'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error terminating contract: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        await _handleTerminateContract(contract);
                       },
                       onConfirmWithdrawal: () async {
-                        try {
-                          await _contractService.confirmWithdrawal(contract.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Withdrawal confirmed successfully'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Error confirming withdrawal: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        await _handleConfirmWithdrawal(contract);
                       },
                       onDeclineWithdrawal: () async {
-                        try {
-                          await _contractService.declineWithdrawal(contract.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Withdrawal request declined'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error declining withdrawal: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        await _handleDeclineWithdrawal(contract);
                       },
                       onApproveTermination: () async {
-                        try {
-                          await _contractService
-                              .approveTermination(contract.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Termination approved successfully'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text('Error approving termination: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        await _handleApproveTermination(contract);
                       },
                     );
                   },

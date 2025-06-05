@@ -62,11 +62,10 @@ class ContractService {
 
       return contractData;
     } catch (e) {
-       if (kDebugMode) {
-         print(e);
-       }
+      if (kDebugMode) {
+        print(e);
+      }
       throw Exception('Failed to create contract: $e');
-     
     }
   }
 
@@ -193,10 +192,75 @@ class ContractService {
   // Update contract status
   Future<void> updateContractStatus(String contractId, String newStatus) async {
     try {
+      // Get the contract details first
+      final contractDoc =
+          await _firestore.collection('contracts').doc(contractId).get();
+      if (!contractDoc.exists) {
+        throw Exception('Contract not found');
+      }
+
+      final contract = ContractModel.fromMap(contractDoc.data()!);
+
+      // Update the contract status
       await _firestore.collection('contracts').doc(contractId).update({
         'status': newStatus,
         'updatedAt': DateTime.now().toIso8601String(),
       });
+
+      // Determine who to notify based on the status change
+      String? receiverId;
+      String notificationTitle;
+      String notificationBody;
+
+      switch (newStatus) {
+        case 'active':
+          receiverId = contract.beneficiaryId;
+          notificationTitle = 'Contract Funded';
+          notificationBody =
+              'Your contract "${contract.title}" has been funded and is now active.';
+          break;
+        case 'withdraw':
+          receiverId = contract.benefactorId;
+          notificationTitle = 'Withdrawal Requested';
+          notificationBody =
+              'A withdrawal has been requested for contract "${contract.title}".';
+          break;
+        case 'completed':
+          receiverId = contract.benefactorId;
+          notificationTitle = 'Contract Completed';
+          notificationBody =
+              'Contract "${contract.title}" has been marked as completed.';
+          break;
+        case 'terminated':
+          receiverId = contract.beneficiaryId;
+          notificationTitle = 'Contract Terminated';
+          notificationBody =
+              'Contract "${contract.title}" has been terminated.';
+          break;
+        case 'closed':
+          receiverId = contract.benefactorId;
+          notificationTitle = 'Contract Closed';
+          notificationBody = 'Contract "${contract.title}" has been closed.';
+          break;
+        default:
+          return; // Don't send notification for other status changes
+      }
+
+      if (receiverId != null) {
+        // Get the receiver's FCM token
+        final receiverDoc =
+            await _firestore.collection('users').doc(receiverId).get();
+        if (receiverDoc.exists) {
+          final receiverToken = receiverDoc.data()?['deviceToken'];
+          if (receiverToken != null) {
+            await sendFCMV1Notification(
+              fcmToken: receiverToken,
+              title: notificationTitle,
+              body: notificationBody,
+            );
+          }
+        }
+      }
     } catch (e) {
       throw Exception('Failed to update contract status: $e');
     }

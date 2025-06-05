@@ -6,6 +6,8 @@ import '../widgets/custom_text_field.dart';
 import '../services/contract_service.dart';
 import '../services/user_service.dart';
 import '../models/user_model.dart';
+import '../models/contract_model.dart';
+import '../utils/custom_snackbar.dart';
 
 class CreateContractScreen extends StatefulWidget {
   const CreateContractScreen({super.key});
@@ -55,11 +57,10 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   Future<void> _createContract() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedSecondParticipant == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a second participant'),
-            backgroundColor: Colors.red,
-          ),
+        CustomSnackBar.show(
+          context: context,
+          message: 'Please select a second participant',
+          type: SnackBarType.error,
         );
         return;
       }
@@ -69,12 +70,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
       });
 
       try {
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        final user = userProvider.user;
-
-        if (user == null) {
-          throw Exception('User not found');
-        }
+        final user = Provider.of<UserProvider>(context, listen: false).user!;
 
         await _contractService.createContract(
           userId: user.id,
@@ -90,21 +86,19 @@ class _CreateContractScreenState extends State<CreateContractScreen>
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contract created successfully'),
-              backgroundColor: Color(0xFF22C55E),
-            ),
+          CustomSnackBar.show(
+            context: context,
+            message: 'Contract created successfully',
+            type: SnackBarType.success,
           );
           Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red,
-            ),
+          CustomSnackBar.show(
+            context: context,
+            message: e.toString(),
+            type: SnackBarType.error,
           );
         }
       } finally {
@@ -404,8 +398,8 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                       const SizedBox(height: 16),
                       CustomTextField(
                         controller: _descriptionController,
-                        label: 'Description',
-                        hint: 'Enter contract description',
+                        label: 'Contract Conditions',
+                        hint: 'Enter contract conditions',
                         prefixIcon: const Icon(Icons.description_outlined,
                             color: Colors.grey),
                         maxLines: 3,

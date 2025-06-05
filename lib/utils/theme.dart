@@ -85,7 +85,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: errorColor),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: cardColor,
@@ -179,7 +179,8 @@ class AppTheme {
   );
 
   // Glassmorphism Card
-  static BoxDecoration glassCard({Color color = Colors.white, double opacity = 0.2}) {
+  static BoxDecoration glassCard(
+      {Color color = Colors.white, double opacity = 0.2}) {
     return BoxDecoration(
       color: color.withOpacity(opacity),
       borderRadius: BorderRadius.circular(16),
