@@ -5,11 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
 
-
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
 
   // Get current user ID
   String? getCurrentUserId() {
@@ -34,10 +32,10 @@ class AuthService {
       }
 
       final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
-      
+
       // Save user data to SharedPreferences
       await _saveUserData(userData);
-      
+
       return userData;
     } catch (e) {
       print('Error getting current user: $e');
@@ -135,52 +133,52 @@ class AuthService {
 
   // Sign in with phone number and password
 
-Future<UserModel> signInWithPhoneAndPassword(
-    String phone, String password) async {
-  try {
-    final userCredential = await _auth.signInWithEmailAndPassword(
-      email: '$phone@escrow.app',
-      password: password,
-    );
+  Future<UserModel> signInWithPhoneAndPassword(
+      String phone, String password) async {
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: '$phone@escrow.app',
+        password: password,
+      );
 
-    if (userCredential.user == null) {
-      throw Exception('Failed to sign in');
+      if (userCredential.user == null) {
+        throw Exception('Failed to sign in');
+      }
+
+      final uid = userCredential.user!.uid;
+
+      // Fetch device token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      // Update Firestore with the device token
+      await _firestore.collection('users').doc(uid).update({
+        'deviceToken': fcmToken,
+      });
+
+      // Get updated user data
+      final doc = await _firestore.collection('users').doc(uid).get();
+
+      if (!doc.exists) {
+        throw Exception('User data not found');
+      }
+
+      final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+
+      // Save user data locally
+      await _saveUserData(userData);
+
+      return userData;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found with this phone number.');
+      } else if (e.code == 'wrong-password') {
+        throw Exception('Wrong password provided.');
+      }
+      throw Exception(e.message ?? 'An error occurred during sign in');
+    } catch (e) {
+      throw Exception('Failed to sign in: $e');
     }
-
-    final uid = userCredential.user!.uid;
-
-    // Fetch device token
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-
-    // Update Firestore with the device token
-    await _firestore.collection('users').doc(uid).update({
-      'deviceToken': fcmToken,
-    });
-
-    // Get updated user data
-    final doc = await _firestore.collection('users').doc(uid).get();
-
-    if (!doc.exists) {
-      throw Exception('User data not found');
-    }
-
-    final userData = UserModel.fromMap(doc.data() as Map<String, dynamic>);
-
-    // Save user data locally
-    await _saveUserData(userData);
-
-    return userData;
-  } on FirebaseAuthException catch (e) {
-    if (e.code == 'user-not-found') {
-      throw Exception('No user found with this phone number.');
-    } else if (e.code == 'wrong-password') {
-      throw Exception('Wrong password provided.');
-    }
-    throw Exception(e.message ?? 'An error occurred during sign in');
-  } catch (e) {
-    throw Exception('Failed to sign in: $e');
   }
-}
 
   // Sign out
   Future<void> signOut() async {
@@ -206,5 +204,41 @@ Future<UserModel> signInWithPhoneAndPassword(
   Future<String?> getStoredUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('userId');
+  }
+
+  // Change password
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('No user is currently signed in');
+      }
+
+      // Get the user's email (which is phone@escrow.app)
+      final email = user.email;
+      if (email == null) {
+        throw Exception('User email not found');
+      }
+
+      // Reauthenticate user with current password
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // Change password
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw Exception('Current password is incorrect');
+      } else if (e.code == 'weak-password') {
+        throw Exception('New password is too weak');
+      }
+      throw Exception(e.message ?? 'Failed to change password');
+    } catch (e) {
+      throw Exception('Failed to change password: $e');
+    }
   }
 }

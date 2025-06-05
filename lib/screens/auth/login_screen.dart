@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
+import '../../utils/custom_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,8 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
+          CustomSnackBar.show(
+            context: context,
+            message: e.toString(),
+            type: SnackBarType.error,
           );
         }
       } finally {
@@ -77,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Placeholder logo
-                   Image.asset(
+                    Image.asset(
                       'assets/icons/green.png',
                       scale: 30,
                     ),
@@ -103,13 +105,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          CustomTextField(
+                          TextFormField(
                             controller: _phoneController,
-                            label: 'Phone Number',
-                            hint: 'e.g. 0755123456',
-                            prefixIcon: const Icon(Icons.phone_outlined,
-                                color: Colors.grey),
                             keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'Phone Number',
+                              hintText: 'e.g. 0758376759',
+                              prefixIcon: const Icon(Icons.phone_outlined,
+                                  color: Colors.grey),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Colors.green, width: 2),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: Colors.red.withOpacity(0.7)),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: Colors.red.withOpacity(0.7)),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 18),
+                            ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your phone number';
@@ -121,13 +154,44 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          CustomTextField(
+                          TextFormField(
                             controller: _passwordController,
-                            label: 'Password',
-                            hint: '********',
-                            prefixIcon: const Icon(Icons.lock_outline,
-                                color: Colors.grey),
                             obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              hintText: '********',
+                              prefixIcon: const Icon(Icons.lock_outline,
+                                  color: Colors.grey),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Colors.green, width: 2),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: Colors.red.withOpacity(0.7)),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: Colors.red.withOpacity(0.7)),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 18),
+                            ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';

@@ -264,8 +264,8 @@ class ContractCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        icon: const Icon(Icons.delete_outline, size: 18),
-                        label: const Text('Delete Contract'),
+                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                        label: const Text('Delete Contract',style: TextStyle(color: Colors.red),),
                       ),
                     ),
                   ],
@@ -332,7 +332,7 @@ class ContractCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onFundContract,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
+                      backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -350,7 +350,7 @@ class ContractCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onFundContract,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
+                      backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(

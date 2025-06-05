@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/deposit_service.dart';
+import '../services/contract_service.dart';
+import '../utils/custom_snackbar.dart';
 
 class FundContractScreen extends StatefulWidget {
   final ContractModel contract;
@@ -22,12 +24,26 @@ class _FundContractScreenState extends State<FundContractScreen> {
   final _paymentMessageController = TextEditingController();
   String? _selectedProvider;
   bool _isLoading = false;
+ 
+  final _contractService = ContractService();
 
-  final Map<String, String> _paymentProviders = {
-    'Mix by Yas Agent': '864706',
-    'Selcom Agent': '61135943',
-    'Halopesa': '678387',
-    'NMB Lipa Namba': '21262098',
+  final Map<String, Map<String, String>> _paymentProviders = {
+    'Mix by Yas Agent': {
+      'number': '864706',
+      'logo': 'assets/icons/mixx.png',
+    },
+    'Selcom Agent': {
+      'number': '61135943',
+      'logo': 'assets/icons/selcom.png',
+    },
+    'Halopesa': {
+      'number': '678387',
+      'logo': 'assets/icons/halopesa.png',
+    },
+    'NMB Lipa Namba': {
+      'number': '21262098',
+      'logo': 'assets/icons/nmb.webp',
+    },
   };
 
   @override
@@ -45,21 +61,19 @@ class _FundContractScreenState extends State<FundContractScreen> {
 
   Future<void> _handleSubmit() async {
     if (_selectedProvider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a payment provider'),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackBar.show(
+        context: context,
+        message: 'Please select a payment provider',
+        type: SnackBarType.error,
       );
       return;
     }
 
     if (_paymentMessageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please paste the payment confirmation message'),
-          backgroundColor: Colors.red,
-        ),
+      CustomSnackBar.show(
+        context: context,
+        message: 'Please paste the payment confirmation message',
+        type: SnackBarType.error,
       );
       return;
     }
@@ -81,26 +95,29 @@ class _FundContractScreenState extends State<FundContractScreen> {
         userId: user.id,
         provider: _selectedProvider!,
         contractFund: widget.contract.reward.toString(),
-        controlNumber: _paymentProviders[_selectedProvider]!,
+        controlNumber: _paymentProviders[_selectedProvider]!['number']!,
         paymentMessage: _paymentMessageController.text,
       );
 
+      await _contractService.updateContractStatus(
+        widget.contract.id,
+        'active',
+      );
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your payment request has been sent for approval'),
-            backgroundColor: Colors.green,
-          ),
+        CustomSnackBar.show(
+          context: context,
+          message: 'Your payment request has been sent for approval',
+          type: SnackBarType.success,
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting payment: $e'),
-            backgroundColor: Colors.red,
-          ),
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error submitting payment: $e',
+          type: SnackBarType.error,
         );
       }
     } finally {
@@ -118,7 +135,10 @@ class _FundContractScreenState extends State<FundContractScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fund Contract'),
+        title: const Text(
+          'Fund Contract',
+          style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w700),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -129,10 +149,10 @@ class _FundContractScreenState extends State<FundContractScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  color: Colors.green.withOpacity(0.3),
                 ),
               ),
               child: Row(
@@ -150,7 +170,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -159,13 +179,55 @@ class _FundContractScreenState extends State<FundContractScreen> {
             const SizedBox(height: 24),
 
             // Title/Instruction
-            Text(
-              'Gateway Name: Mai Money',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontSize: 14.0,
+                  color: Colors.grey[700],
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Gateway Name: ',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.grey[800],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextSpan(
+                      text: 'Mai Money',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        color: Colors.green[500],
+                        fontWeight: FontWeight.bold,
+                      )),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 5.0),
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontSize: 14.0,
+                  color: Colors.grey[700],
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Note: ',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  TextSpan(
+                      text: 'Please choose your payment gateway.',
+                      style: TextStyle(
+                        fontSize: 14.0,
+                      )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Payment Provider Cards
             ..._paymentProviders.entries.map((entry) {
@@ -182,13 +244,11 @@ class _FundContractScreenState extends State<FundContractScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? theme.colorScheme.primary.withOpacity(0.1)
+                          ? Colors.green.withOpacity(0.1)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : Colors.grey.shade300,
+                        color: isSelected ? Colors.green : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -216,22 +276,45 @@ class _FundContractScreenState extends State<FundContractScreen> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                entry.key,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      entry.key,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      entry.value['number'] ?? '',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                entry.value,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
+                              const SizedBox(width: 12),
+                              Image.asset(entry.value['logo']!,
+                                  scale: entry.value['logo'] ==
+                                          "assets/icons/mixx.png"
+                                      ? 12.0
+                                      : entry.value['logo'] ==
+                                              "assets/icons/nmb.webp"
+                                          ? 10.0
+                                          : entry.value['logo'] ==
+                                                  "assets/icons/selcom.png"
+                                              ? 5.0
+                                              : entry.value['logo'] ==
+                                                      "assets/icons/halopesa.png"
+                                                  ? 12.0
+                                                  : 10.0),
                             ],
                           ),
                         ),
@@ -242,13 +325,30 @@ class _FundContractScreenState extends State<FundContractScreen> {
               );
             }),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 15.0),
 
             // Instruction Text
-            Text(
-              'After completing the payment, please copy the payment confirmation SMS from your phone and paste it below.',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[700],
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontSize: 14.0,
+                  color: Colors.grey[700],
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Note: ',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  TextSpan(
+                      text:
+                          'After completing the payment, please copy the payment confirmation SMS from your phone and paste it below.',
+                      style: TextStyle(
+                        fontSize: 14.0,
+                      )),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -267,9 +367,13 @@ class _FundContractScreenState extends State<FundContractScreen> {
                     child: TextField(
                       controller: _paymentMessageController,
                       maxLines: 4,
+                      style: TextStyle(fontSize: 14.0),
                       decoration: const InputDecoration(
-                        hintText: 'Paste payment confirmation message here...',
-                        contentPadding: EdgeInsets.all(16),
+                        hintText:
+                            'Eg: 0604135KT Confirmed. You have sent TZS 2,000.00 to EMMANUEL DANIEL MAZIKU - M-Pesa (0758376759) on 2025-06-04 17:42:02. TIPS reference CF44ID9ZH8Y. Help 0800 714 888/ 0800 784 888',
+                        hintStyle:
+                            TextStyle(fontSize: 14.0, color: Colors.grey),
+                        contentPadding: EdgeInsets.all(14),
                         border: InputBorder.none,
                       ),
                     ),
@@ -291,7 +395,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSubmit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
