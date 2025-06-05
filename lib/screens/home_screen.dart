@@ -202,16 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     )),
-                    IconButton.outlined(
-                      style: IconButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        side: const BorderSide(
-                          color: Color.fromARGB(255, 151, 209, 161),
-                        ),
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                      ),
+                    IconButton(
+
                       onPressed: () async {
                         try {
                           final authService = Provider.of<AuthService>(

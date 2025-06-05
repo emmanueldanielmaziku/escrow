@@ -17,9 +17,7 @@ class UserService {
         .limit(5)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data()))
-          .toList();
+      return snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
     });
   }
 
@@ -41,4 +39,4 @@ class UserService {
       throw Exception('Failed to get user by phone: $e');
     }
   }
-} 
+}

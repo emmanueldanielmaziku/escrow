@@ -1,11 +1,175 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
+import 'terms_conditions_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  void _showHelpCenterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              'Contact Us',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'For support, inquiries, or complaints, reach us at:',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildContactOption(
+              context,
+              'Email Support',
+              'rfroulis@gmail.com',
+              Iconsax.message,
+              () async {
+                final Uri emailLaunchUri = Uri(
+                  scheme: 'mailto',
+                  path: 'rfroulis@gmail.com',
+                  queryParameters: {
+                    'subject': 'Escrow App Support',
+                  },
+                );
+                try {
+                  await launchUrlString(emailLaunchUri.toString());
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not launch email client'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildContactOption(
+              context,
+              'WhatsApp Support',
+              '+255 620 719 589',
+              Iconsax.message_text_1,
+              () async {
+                try {
+                  await launchUrlString(
+                    'https://wa.me/255620719589?text=Hello, I need help with the Escrow App',
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not launch WhatsApp'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactOption(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            width: 0.5,
+            color: Colors.grey[300]!,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF22C55E),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Iconsax.arrow_right_3,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +235,7 @@ class ProfileScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-            IconButton.outlined(
+              IconButton.outlined(
                 style: IconButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
@@ -79,7 +243,6 @@ class ProfileScreen extends StatelessWidget {
                   side: const BorderSide(
                     color: Colors.transparent,
                   ),
-              
                 ),
                 onPressed: () async {
                   try {
@@ -198,23 +361,32 @@ class ProfileScreen extends StatelessWidget {
                         'Help Center',
                         'Get help and support',
                         Iconsax.message_question,
+                        onTap: () => _showHelpCenterBottomSheet(context),
+                      ),
+                      _buildProfileItem(
+                        context,
+                        'Terms & Conditions',
+                        'Read our terms and conditions',
+                        Iconsax.document_text,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Help center coming soon!'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const TermsConditionsScreen(),
                             ),
                           );
                         },
                       ),
                       _buildProfileItem(
                         context,
-                        'Terms & Privacy',
-                        'View our terms and privacy policy',
+                        'Privacy Policy',
+                        'Read our privacy policy',
                         Iconsax.shield_tick,
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Terms & Privacy coming soon!'),
+                              content: Text('Privacy policy coming soon!'),
                             ),
                           );
                         },
@@ -249,7 +421,6 @@ class ProfileScreen extends StatelessWidget {
                               (route) => false,
                             );
                           }
-                          
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
