@@ -10,10 +10,10 @@ class ContractModel {
   final DateTime updatedAt;
   final String role;
 
-  // Benefactor information
-  final String? benefactorId;
-  final String? benefactorName;
-  final String? benefactorPhone;
+  // Remitter information
+  final String? remitterId;
+  final String? remitterName;
+  final String? remitterPhone;
 
   // Beneficiary information
   final String? beneficiaryId;
@@ -29,9 +29,9 @@ class ContractModel {
     required this.createdAt,
     required this.updatedAt,
     required this.role,
-    this.benefactorId,
-    this.benefactorName,
-    this.benefactorPhone,
+    this.remitterId,
+    this.remitterName,
+    this.remitterPhone,
     this.beneficiaryId,
     this.beneficiaryName,
     this.beneficiaryPhone,
@@ -93,9 +93,9 @@ class ContractModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'role': role,
-      'benefactorId': benefactorId,
-      'benefactorName': benefactorName,
-      'benefactorPhone': benefactorPhone,
+      'remitterId': remitterId,
+      'remitterName': remitterName,
+      'remitterPhone': remitterPhone,
       'beneficiaryId': beneficiaryId,
       'beneficiaryName': beneficiaryName,
       'beneficiaryPhone': beneficiaryPhone,
@@ -112,9 +112,9 @@ class ContractModel {
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
       role: map['role'] as String,
-      benefactorId: map['benefactorId'] as String?,
-      benefactorName: map['benefactorName'] as String?,
-      benefactorPhone: map['benefactorPhone'] as String?,
+      remitterId: map['remitterId'] as String?,
+      remitterName: map['remitterName'] as String?,
+      remitterPhone: map['remitterPhone'] as String?,
       beneficiaryId: map['beneficiaryId'] as String?,
       beneficiaryName: map['beneficiaryName'] as String?,
       beneficiaryPhone: map['beneficiaryPhone'] as String?,

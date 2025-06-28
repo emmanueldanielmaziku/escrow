@@ -5,9 +5,9 @@ enum ContractStatus { active, unfunded, completed, rejected, terminated }
 
 class Contract {
   final String id;
-  final String benefactorId;
-  final String benefactorName;
-  final String benefactorNumber;
+  final String remitterId;
+  final String remitterName;
+  final String remitterNumber;
   final String beneficiaryId;
   final String beneficiaryName;
   final String beneficiaryNumber;
@@ -19,9 +19,9 @@ class Contract {
 
   Contract({
     required this.id,
-    required this.benefactorId,
-    required this.benefactorName,
-    required this.benefactorNumber,
+    required this.remitterId,
+    required this.remitterName,
+    required this.remitterNumber,
     required this.beneficiaryId,
     required this.beneficiaryName,
     required this.beneficiaryNumber,
@@ -36,9 +36,9 @@ class Contract {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'benefactorId': benefactorId,
-      'benefactorName': benefactorName,
-      'benefactorNumber': benefactorNumber,
+      'remitterId': remitterId,
+      'remitterName': remitterName,
+      'remitterNumber': remitterNumber,
       'beneficiaryId': beneficiaryId,
       'beneficiaryName': beneficiaryName,
       'beneficiaryNumber': beneficiaryNumber,
@@ -54,9 +54,9 @@ class Contract {
   factory Contract.fromMap(Map<String, dynamic> map) {
     return Contract(
       id: map['id'] ?? '',
-      benefactorId: map['benefactorId'] ?? '',
-      benefactorName: map['benefactorName'] ?? '',
-      benefactorNumber: map['benefactorNumber'] ?? '',
+      remitterId: map['remitterId'] ?? '',
+      remitterName: map['remitterName'] ?? '',
+      remitterNumber: map['remitterNumber'] ?? '',
       beneficiaryId: map['beneficiaryId'] ?? '',
       beneficiaryName: map['beneficiaryName'] ?? '',
       beneficiaryNumber: map['beneficiaryNumber'] ?? '',
@@ -74,9 +74,9 @@ class Contract {
   // Create a copy of Contract with updated fields
   Contract copyWith({
     String? id,
-    String? benefactorId,
-    String? benefactorName,
-    String? benefactorNumber,
+    String? remitterId,
+    String? remitterName,
+    String? remitterNumber,
     String? beneficiaryId,
     String? beneficiaryName,
     String? beneficiaryNumber,
@@ -88,9 +88,9 @@ class Contract {
   }) {
     return Contract(
       id: id ?? this.id,
-      benefactorId: benefactorId ?? this.benefactorId,
-      benefactorName: benefactorName ?? this.benefactorName,
-      benefactorNumber: benefactorNumber ?? this.benefactorNumber,
+      remitterId: remitterId ?? this.remitterId,
+      remitterName: remitterName ?? this.remitterName,
+      remitterNumber: remitterNumber ?? this.remitterNumber,
       beneficiaryId: beneficiaryId ?? this.beneficiaryId,
       beneficiaryName: beneficiaryName ?? this.beneficiaryName,
       beneficiaryNumber: beneficiaryNumber ?? this.beneficiaryNumber,

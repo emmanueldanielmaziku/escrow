@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:escrow_app/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -227,16 +227,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateContractSheet,
-        backgroundColor: Colors.green,
-        elevation: 4,
-        child: const Icon(
-          Iconsax.add_circle,
-          color: Colors.white,
-          size: 24,
-        ),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _showCreateContractSheet,
+      //   backgroundColor: Colors.green,
+      //   elevation: 4,
+      //   child: const Icon(
+      //     Iconsax.add_circle,
+      //     color: Colors.white,
+      //     size: 24,
+      //   ),
+      // ),
       body: Column(
         children: [
           // Fixed Header Section
@@ -307,43 +307,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     )),
                     IconButton(
-                      onPressed: () async {
-                        try {
-                          final authService = Provider.of<AuthService>(
-                            context,
-                            listen: false,
-                          );
-                          final userProvider = Provider.of<UserProvider>(
-                            context,
-                            listen: false,
-                          );
+                      onPressed: _showCreateContractSheet
 
-                          // Clear user data from provider
-                          userProvider.clearUser();
+                        // try {
+                        //   final authService = Provider.of<AuthService>(
+                        //     context,
+                        //     listen: false,
+                        //   );
+                        //   final userProvider = Provider.of<UserProvider>(
+                        //     context,
+                        //     listen: false,
+                        //   );
 
-                          // Sign out from auth service
-                          await authService.signOut();
+                        //   // Clear user data from provider
+                        //   userProvider.clearUser();
 
-                          if (context.mounted) {
-                            // Navigate to login screen
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/',
-                              (route) => false,
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            CustomSnackBar.show(
-                              context: context,
-                              message: 'Error signing out: $e',
-                              type: SnackBarType.error,
-                            );
-                          }
-                        }
-                      },
+                        //   // Sign out from auth service
+                        //   await authService.signOut();
+
+                        //   if (context.mounted) {
+                        //     // Navigate to login screen
+                        //     Navigator.of(context).pushNamedAndRemoveUntil(
+                        //       '/',
+                        //       (route) => false,
+                        //     );
+                        //   }
+                        // } catch (e) {
+                        //   if (context.mounted) {
+                        //     CustomSnackBar.show(
+                        //       context: context,
+                        //       message: 'Error signing out: $e',
+                        //       type: SnackBarType.error,
+                        //     );
+                        //   }
+                        // }
+
+,
                       icon: const Icon(
-                        Iconsax.logout,
+                        Iconsax.add_square,
                         color: Colors.white,
+                        size: 28,
                       ),
                     ),
                   ],

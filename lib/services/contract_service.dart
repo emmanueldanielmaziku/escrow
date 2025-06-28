@@ -29,11 +29,9 @@ class ContractService {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         role: role,
-        benefactorId: role == 'Benefactor' ? userId : secondParticipantId,
-        benefactorName:
-            role == 'Benefactor' ? userFullName : secondParticipantName,
-        benefactorPhone:
-            role == 'Benefactor' ? userPhone : secondParticipantPhone,
+        remitterId: role == 'Remitter' ? userId : secondParticipantId,
+        remitterName: role == 'Remitter' ? userFullName : secondParticipantName,
+        remitterPhone: role == 'Remitter' ? userPhone : secondParticipantPhone,
         beneficiaryId: role == 'Beneficiary' ? userId : secondParticipantId,
         beneficiaryName:
             role == 'Beneficiary' ? userFullName : secondParticipantName,
@@ -56,7 +54,7 @@ class ContractService {
 
       await sendFCMV1Notification(
         fcmToken: receiverToken,
-        title: contractData.title,
+        title: receiverDoc['fullName'],
         body: contractData.description,
       );
 
@@ -69,7 +67,7 @@ class ContractService {
     }
   }
 
-  // Accept contract invitation
+
   Future<void> acceptContract({
     required String contractId,
     required String userId,
@@ -92,19 +90,19 @@ class ContractService {
         'updatedAt': DateTime.now().toIso8601String(),
       };
 
-      if (contract.role == 'Benefactor') {
-        // If creator was Benefactor, assign new user as Beneficiary
+      if (contract.role == 'Remitter') {
+        // If creator was Remitter, assign new user as Beneficiary
         updates.addAll({
           'beneficiaryId': userId,
           'beneficiaryName': userFullName,
           'beneficiaryPhone': userPhone,
         });
       } else {
-        // If creator was Beneficiary, assign new user as Benefactor
+        // If creator was Beneficiary, assign new user as Remitter
         updates.addAll({
-          'benefactorId': userId,
-          'benefactorName': userFullName,
-          'benefactorPhone': userPhone,
+          'remitterId': userId,
+          'remitterName': userFullName,
+          'remitterPhone': userPhone,
         });
       }
 
@@ -120,7 +118,7 @@ class ContractService {
     return _firestore
         .collection('contracts')
         .where(Filter.or(
-          Filter('benefactorId', isEqualTo: userId),
+          Filter('remitterId', isEqualTo: userId),
           Filter('beneficiaryId', isEqualTo: userId),
         ))
         .orderBy('createdAt', descending: true)
@@ -138,7 +136,7 @@ class ContractService {
     return _firestore
         .collection('contracts')
         .where(Filter.or(
-          Filter('benefactorId', isEqualTo: userId),
+          Filter('remitterId', isEqualTo: userId),
           Filter('beneficiaryId', isEqualTo: userId),
         ))
         .where('status', isEqualTo: status)
@@ -160,7 +158,7 @@ class ContractService {
       if (!doc.exists) return null;
 
       final contract = ContractModel.fromMap(doc.data()!);
-      if (contract.benefactorId == userId) return 'Benefactor';
+      if (contract.remitterId == userId) return 'Remitter';
       if (contract.beneficiaryId == userId) return 'Beneficiary';
       return null;
     } catch (e) {
@@ -192,7 +190,7 @@ class ContractService {
   // Update contract status
   Future<void> updateContractStatus(String contractId, String newStatus) async {
     try {
-      // Get the contract details first
+    
       final contractDoc =
           await _firestore.collection('contracts').doc(contractId).get();
       if (!contractDoc.exists) {
@@ -201,7 +199,7 @@ class ContractService {
 
       final contract = ContractModel.fromMap(contractDoc.data()!);
 
-      // Update the contract status
+   
       await _firestore.collection('contracts').doc(contractId).update({
         'status': newStatus,
         'updatedAt': DateTime.now().toIso8601String(),
@@ -215,39 +213,39 @@ class ContractService {
       switch (newStatus) {
         case 'active':
           receiverId = contract.beneficiaryId;
-          notificationTitle = 'Contract Funded';
+          notificationTitle = contract.beneficiaryName ?? '';
           notificationBody =
               'Your contract "${contract.title}" has been funded and is now active.';
           break;
         case 'withdraw':
-          receiverId = contract.benefactorId;
-          notificationTitle = 'Withdrawal Requested';
+          receiverId = contract.remitterId;
+          notificationTitle = contract.remitterName ?? '';
           notificationBody =
               'A withdrawal has been requested for contract "${contract.title}".';
           break;
         case 'completed':
-          receiverId = contract.benefactorId;
-          notificationTitle = 'Contract Completed';
+          receiverId = contract.remitterId;
+          notificationTitle = contract.remitterName ?? '';
           notificationBody =
               'Contract "${contract.title}" has been marked as completed.';
           break;
         case 'terminated':
           receiverId = contract.beneficiaryId;
-          notificationTitle = 'Contract Terminated';
+          notificationTitle = contract.beneficiaryName ?? '';
           notificationBody =
               'Contract "${contract.title}" has been terminated.';
           break;
         case 'closed':
-          receiverId = contract.benefactorId;
-          notificationTitle = 'Contract Closed';
+          receiverId = contract.remitterId;
+          notificationTitle = contract.remitterName ?? '';
           notificationBody = 'Contract "${contract.title}" has been closed.';
           break;
         default:
-          return; // Don't send notification for other status changes
+          return;
       }
 
       if (receiverId != null) {
-        // Get the receiver's FCM token
+      
         final receiverDoc =
             await _firestore.collection('users').doc(receiverId).get();
         if (receiverDoc.exists) {
