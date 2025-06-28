@@ -6,7 +6,6 @@ import '../widgets/custom_text_field.dart';
 import '../services/contract_service.dart';
 import '../services/user_service.dart';
 import '../models/user_model.dart';
-import '../models/contract_model.dart';
 import '../utils/custom_snackbar.dart';
 
 class CreateContractScreen extends StatefulWidget {
@@ -19,7 +18,7 @@ class CreateContractScreen extends StatefulWidget {
 class _CreateContractScreenState extends State<CreateContractScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  String _selectedRole = 'Benefactor';
+  String _selectedRole = 'Remitter';
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _rewardController = TextEditingController();
@@ -165,12 +164,12 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                     children: [
                       Expanded(
                         child: _buildRoleOption(
-                          'Benefactor',
+                          'Remitter',
                           Iconsax.user,
-                          _selectedRole == 'Benefactor',
+                          _selectedRole == 'Remitter',
                           () {
                             setState(() {
-                              _selectedRole = 'Benefactor';
+                              _selectedRole = 'Remitter';
                               _selectedSecondParticipant = null;
                               _secondParticipantController.clear();
                             });
@@ -199,7 +198,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                 const SizedBox(height: 24),
                 // Second Participant Search
                 Text(
-                  '${_selectedRole == 'Benefactor' ? 'Beneficiary' : 'Benefactor'}\'s Phone Number',
+                  '${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}\'s Phone Number',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,

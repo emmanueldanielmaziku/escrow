@@ -38,10 +38,8 @@ class ContractCard extends StatelessWidget {
       locale: 'en_US',
     );
 
-    final isBenefactor = contract.benefactorId == userProvider.user?.id;
+    final isRemitter = contract.remitterId == userProvider.user?.id;
     final isBeneficiary = contract.beneficiaryId == userProvider.user?.id;
-    
-  
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -75,7 +73,9 @@ class ContractCard extends StatelessWidget {
                     color: ContractModel.getStatusColor(contract.status)
                         .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: ContractModel.getStatusColor(contract.status), width: 0.5),
+                    border: Border.all(
+                        color: ContractModel.getStatusColor(contract.status),
+                        width: 0.5),
                   ),
                   child: Text(
                     ContractModel.getStatusText(contract.status),
@@ -92,7 +92,8 @@ class ContractCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.colorScheme.primary, width: 0.5),
+                    border: Border.all(
+                        color: theme.colorScheme.primary, width: 0.5),
                   ),
                   child: Text(
                     currencyFormat.format(contract.reward),
@@ -148,13 +149,13 @@ class ContractCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Benefactor
+                  // Remitter
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Benefactor',
+                          'Remitter',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.w500,
@@ -179,7 +180,7 @@ class ContractCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                contract.benefactorName ?? 'Not assigned',
+                                contract.remitterName ?? 'Not assigned',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -250,7 +251,7 @@ class ContractCard extends StatelessWidget {
             // Action Buttons
             if (contract.status == 'non-active') ...[
               const SizedBox(height: 16),
-              if (isBenefactor && contract.role == 'Benefactor')
+              if (isRemitter && contract.role == 'Remitter')
                 Row(
                   children: [
                     Expanded(
@@ -264,13 +265,17 @@ class ContractCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                        label: const Text('Delete Contract',style: TextStyle(color: Colors.red),),
+                        icon: const Icon(Icons.delete_outline,
+                            size: 18, color: Colors.red),
+                        label: const Text(
+                          'Delete Contract',
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ),
                     ),
                   ],
                 )
-                else if (isBeneficiary && contract.role == 'Beneficiary')
+              else if (isBeneficiary && contract.role == 'Beneficiary')
                 Row(
                   children: [
                     Expanded(
@@ -290,7 +295,7 @@ class ContractCard extends StatelessWidget {
                     ),
                   ],
                 )
-              else if (isBeneficiary && contract.role == 'Benefactor')
+              else if (isBeneficiary && contract.role == 'Remitter')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -307,7 +312,7 @@ class ContractCard extends StatelessWidget {
                     label: const Text('Accept Invitation'),
                   ),
                 )
-                     else if (isBenefactor && contract.role == 'Beneficiary')
+              else if (isRemitter && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -326,7 +331,7 @@ class ContractCard extends StatelessWidget {
                 ),
             ] else if (contract.status == 'unfunded') ...[
               const SizedBox(height: 16),
-              if (isBenefactor && contract.role == 'Beneficiary')
+              if (isRemitter && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -344,7 +349,7 @@ class ContractCard extends StatelessWidget {
                     label: const Text('Fund Contract'),
                   ),
                 )
-                     else if (isBenefactor && contract.role == 'Benefactor')
+              else if (isRemitter && contract.role == 'Remitter')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -362,7 +367,7 @@ class ContractCard extends StatelessWidget {
                     label: const Text('Fund Contract'),
                   ),
                 )
-              else if (isBeneficiary && contract.role == 'Benefactor')
+              else if (isBeneficiary && contract.role == 'Remitter')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -379,7 +384,7 @@ class ContractCard extends StatelessWidget {
                     label: const Text('Wait for contract to be funded'),
                   ),
                 )
-                  else if (isBeneficiary && contract.role == 'Beneficiary')
+              else if (isBeneficiary && contract.role == 'Beneficiary')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -398,7 +403,7 @@ class ContractCard extends StatelessWidget {
                 ),
             ] else if (contract.status == 'active') ...[
               const SizedBox(height: 16),
-              if (isBenefactor)
+              if (isRemitter)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -434,7 +439,7 @@ class ContractCard extends StatelessWidget {
                 ),
             ] else if (contract.status == 'withdraw') ...[
               const SizedBox(height: 16),
-              if (isBenefactor)
+              if (isRemitter)
                 Row(
                   children: [
                     Expanded(
@@ -522,7 +527,7 @@ class ContractCard extends StatelessWidget {
               ],
             ] else if (contract.status == 'terminated') ...[
               const SizedBox(height: 16),
-              if (isBenefactor)
+              if (isRemitter)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -593,7 +598,7 @@ class ContractCard extends StatelessWidget {
                   label: const Text('Contract Terminated'),
                 ),
               ),
-              if (isBenefactor) ...[
+              if (isRemitter) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
