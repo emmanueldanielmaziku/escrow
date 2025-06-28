@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:random_avatar/random_avatar.dart';
 import '../models/contract_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
@@ -28,6 +29,8 @@ class ContractCard extends StatelessWidget {
     this.onApproveTermination,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -40,7 +43,10 @@ class ContractCard extends StatelessWidget {
 
     final isRemitter = contract.remitterId == userProvider.user?.id;
     final isBeneficiary = contract.beneficiaryId == userProvider.user?.id;
-
+    Widget remitterAvatar = RandomAvatar(contract.remitterName ?? 'User',
+        trBackground: true, height: 50, width: 50);
+    Widget beneficiaryAvatar = RandomAvatar(contract.beneficiaryName ?? 'User',
+        trBackground: true, height: 50, width: 50);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -169,13 +175,10 @@ class ContractCard extends StatelessWidget {
                               height: 20,
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                                image: const DecorationImage(
-                                  image: NetworkImage(
-                                    "https://avatar.iran.liara.run/public",
-                                  ),
-                                ),
+                        borderRadius: BorderRadius.circular(10),
+                                
                               ),
+                              child: remitterAvatar,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -220,13 +223,9 @@ class ContractCard extends StatelessWidget {
                                 height: 20,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.9),
-                                  shape: BoxShape.circle,
-                                  image: const DecorationImage(
-                                    image: NetworkImage(
-                                      "https://avatar.iran.liara.run/public",
-                                    ),
-                                  ),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
+                                child: beneficiaryAvatar,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
