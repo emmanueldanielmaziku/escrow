@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "567c64b3cb4cf82397aac55f4f0cbd3ca20d77c6c03bedbc4ceaddc08904aef7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.7"
   fake_async:
     dependency: transitive
     description:
@@ -632,6 +640,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.8"
+  rich_field_controller:
+    dependency: "direct main"
+    description:
+      name: rich_field_controller
+      sha256: f79182e351b6f9fecf0de3ec777b68f07ff2fc6eb050d60cf095c5d72833282a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   share_plus:
     dependency: "direct main"
     description:

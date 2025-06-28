@@ -354,83 +354,65 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                 ],
 
                 const SizedBox(height: 24),
-                // Contract Details Section
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(width: 0.5, color: Colors.grey[300]!),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.05),
-                        spreadRadius: 1,
-                        blurRadius: 10,
-                        offset: const Offset(0, 1),
+         Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contract Details',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Contract Details',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      CustomTextField(
-                        controller: _titleController,
-                        label: 'Contract Title',
-                        hint: 'Enter contract title',
-                        prefixIcon: const Icon(Icons.title_outlined,
-                            color: Colors.grey),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a title';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: _descriptionController,
-                        label: 'Contract Conditions',
-                        hint: 'Enter contract conditions',
-                        prefixIcon: const Icon(Icons.description_outlined,
-                            color: Colors.grey),
-                        maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a description';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: _rewardController,
-                        label: 'Reward Amount',
-                        hint: 'Enter amount',
-                        prefixIcon: const Icon(Icons.attach_money_outlined,
-                            color: Colors.grey),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an amount';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter a valid amount';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 20),
+                    CustomTextField(
+                      controller: _titleController,
+                      label: 'Contract Title',
+                      hint: 'Enter contract title',
+                      prefixIcon:
+                          const Icon(Icons.title_outlined, color: Colors.grey),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a title';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _descriptionController,
+                      label: 'Contract Conditions',
+                      hint: 'Enter contract conditions',
+                      prefixIcon: const Icon(Icons.description_outlined,
+                          color: Colors.grey),
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _rewardController,
+                      label: 'Reward Amount',
+                      hint: 'Enter amount',
+                      prefixIcon: const Icon(Icons.attach_money_outlined,
+                          color: Colors.grey),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter an amount';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid amount';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
