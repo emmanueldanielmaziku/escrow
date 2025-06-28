@@ -4,6 +4,7 @@ import 'package:escrow_app/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:random_avatar/random_avatar.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
 import '../services/contract_service.dart';
@@ -221,11 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final theme = Theme.of(context);
-
+    Widget userAvatar = RandomAvatar(userProvider.user?.fullName ?? 'User',
+        trBackground: true, height: 50, width: 50);
     return Scaffold(
       // floatingActionButton: FloatingActionButton(
       //   onPressed: _showCreateContractSheet,
@@ -272,15 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.white, width: 3),
+                              border: Border.all(color: Colors.white, width: 1.5),
                               color: Colors.white.withOpacity(0.9),
-                              shape: BoxShape.circle,
-                              image: const DecorationImage(
-                                image: NetworkImage(
-                                  "https://avatar.iran.liara.run/public",
-                                ),
-                              ),
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            child: userAvatar,
                           ),
                         ),
                         const SizedBox(width: 12),
