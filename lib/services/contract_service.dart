@@ -67,7 +67,6 @@ class ContractService {
     }
   }
 
-
   Future<void> acceptContract({
     required String contractId,
     required String userId,
@@ -190,7 +189,6 @@ class ContractService {
   // Update contract status
   Future<void> updateContractStatus(String contractId, String newStatus) async {
     try {
-    
       final contractDoc =
           await _firestore.collection('contracts').doc(contractId).get();
       if (!contractDoc.exists) {
@@ -199,7 +197,6 @@ class ContractService {
 
       final contract = ContractModel.fromMap(contractDoc.data()!);
 
-   
       await _firestore.collection('contracts').doc(contractId).update({
         'status': newStatus,
         'updatedAt': DateTime.now().toIso8601String(),
@@ -245,7 +242,6 @@ class ContractService {
       }
 
       if (receiverId != null) {
-      
         final receiverDoc =
             await _firestore.collection('users').doc(receiverId).get();
         if (receiverDoc.exists) {
@@ -265,8 +261,46 @@ class ContractService {
   }
 
   // Terminate contract
-  Future<void> terminateContract(String contractId) async {
-    await updateContractStatus(contractId, 'terminated');
+  Future<void> terminateContract(String contractId,
+      {String? terminationReason}) async {
+    try {
+      final updates = {
+        'status': 'terminated',
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      if (terminationReason != null && terminationReason.isNotEmpty) {
+        updates['terminationReason'] = terminationReason;
+      }
+
+      await _firestore.collection('contracts').doc(contractId).update(updates);
+
+      // Send notification
+      final contractDoc =
+          await _firestore.collection('contracts').doc(contractId).get();
+      if (contractDoc.exists) {
+        final contract = ContractModel.fromMap(contractDoc.data()!);
+        final receiverId = contract.beneficiaryId;
+
+        if (receiverId != null) {
+          final receiverDoc =
+              await _firestore.collection('users').doc(receiverId).get();
+          if (receiverDoc.exists) {
+            final receiverToken = receiverDoc.data()?['deviceToken'];
+            if (receiverToken != null) {
+              await sendFCMV1Notification(
+                fcmToken: receiverToken,
+                title: contract.beneficiaryName ?? '',
+                body:
+                    'Contract "${contract.title}" has been terminated. Please review the termination reason.',
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to terminate contract: $e');
+    }
   }
 
   // Request withdrawal

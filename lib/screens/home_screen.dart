@@ -138,9 +138,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _handleTerminateContract(ContractModel contract) async {
+  Future<void> _handleTerminateContract(ContractModel contract,
+      {String? terminationReason}) async {
     try {
-      await _contractService.terminateContract(contract.id);
+      await _contractService.terminateContract(contract.id,
+          terminationReason: terminationReason);
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -222,8 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -276,7 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.white, width: 1.5),
+                              border:
+                                  Border.all(color: Colors.white, width: 1.5),
                               color: Colors.white.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -309,40 +310,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       onPressed: _showCreateContractSheet
 
-                        // try {
-                        //   final authService = Provider.of<AuthService>(
-                        //     context,
-                        //     listen: false,
-                        //   );
-                        //   final userProvider = Provider.of<UserProvider>(
-                        //     context,
-                        //     listen: false,
-                        //   );
+                      // try {
+                      //   final authService = Provider.of<AuthService>(
+                      //     context,
+                      //     listen: false,
+                      //   );
+                      //   final userProvider = Provider.of<UserProvider>(
+                      //     context,
+                      //     listen: false,
+                      //   );
 
-                        //   // Clear user data from provider
-                        //   userProvider.clearUser();
+                      //   // Clear user data from provider
+                      //   userProvider.clearUser();
 
-                        //   // Sign out from auth service
-                        //   await authService.signOut();
+                      //   // Sign out from auth service
+                      //   await authService.signOut();
 
-                        //   if (context.mounted) {
-                        //     // Navigate to login screen
-                        //     Navigator.of(context).pushNamedAndRemoveUntil(
-                        //       '/',
-                        //       (route) => false,
-                        //     );
-                        //   }
-                        // } catch (e) {
-                        //   if (context.mounted) {
-                        //     CustomSnackBar.show(
-                        //       context: context,
-                        //       message: 'Error signing out: $e',
-                        //       type: SnackBarType.error,
-                        //     );
-                        //   }
-                        // }
+                      //   if (context.mounted) {
+                      //     // Navigate to login screen
+                      //     Navigator.of(context).pushNamedAndRemoveUntil(
+                      //       '/',
+                      //       (route) => false,
+                      //     );
+                      //   }
+                      // } catch (e) {
+                      //   if (context.mounted) {
+                      //     CustomSnackBar.show(
+                      //       context: context,
+                      //       message: 'Error signing out: $e',
+                      //       type: SnackBarType.error,
+                      //     );
+                      //   }
+                      // }
 
-,
+                      ,
                       icon: const Icon(
                         Iconsax.add_square,
                         color: Colors.white,
@@ -589,8 +590,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         }
                       },
-                      onTerminateContract: () async {
-                        await _handleTerminateContract(contract);
+                      onTerminateContract: (String terminationReason) async {
+                        await _handleTerminateContract(contract,
+                            terminationReason: terminationReason);
                       },
                       onConfirmWithdrawal: () async {
                         await _handleConfirmWithdrawal(contract);
