@@ -1,6 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:random_avatar/random_avatar.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/contract_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
@@ -11,7 +15,7 @@ class ContractCard extends StatefulWidget {
   final VoidCallback? onRequestWithdrawal;
   final VoidCallback? onDeleteContract;
   final VoidCallback? onAcceptInvitation;
-  final VoidCallback? onTerminateContract;
+  final Function(String)? onTerminateContract;
   final VoidCallback? onConfirmWithdrawal;
   final VoidCallback? onDeclineWithdrawal;
   final VoidCallback? onApproveTermination;
@@ -36,6 +40,28 @@ class ContractCard extends StatefulWidget {
 class _ContractCardState extends State<ContractCard> {
   bool _isExpanded = false;
   bool _isDescriptionExpanded = false;
+  bool _showTerminationReasonInput = false;
+  final TextEditingController _terminationReasonController =
+      TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _terminationReasonController.addListener(_onTerminationReasonChanged);
+  }
+
+  @override
+  void dispose() {
+    _terminationReasonController.removeListener(_onTerminationReasonChanged);
+    _terminationReasonController.dispose();
+    super.dispose();
+  }
+
+  void _onTerminationReasonChanged() {
+    setState(() {
+      // This will trigger a rebuild to update the Submit button state
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +168,7 @@ class _ContractCardState extends State<ContractCard> {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-              // Description with expandable functionality
+
               GestureDetector(
                 onTap: () {
                   setState(() {
@@ -475,22 +501,119 @@ class _ContractCardState extends State<ContractCard> {
       }
     } else if (widget.contract.status == 'active') {
       if (isRemitter) {
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => widget.onTerminateContract?.call(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        if (_showTerminationReasonInput) {
+          return Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Termination Reason',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _terminationReasonController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Enter reason for termination...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red[400]!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _showTerminationReasonInput = false;
+                                _terminationReasonController.clear();
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.grey[600],
+                              side: BorderSide(color: Colors.grey[400]!),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _terminationReasonController.text
+                                    .trim()
+                                    .isNotEmpty
+                                ? () {
+                                    widget.onTerminateContract?.call(
+                                        _terminationReasonController.text
+                                            .trim());
+                                    setState(() {
+                                      _showTerminationReasonInput = false;
+                                      _terminationReasonController.clear();
+                                    });
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Submit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+            ],
+          );
+        } else {
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showTerminationReasonInput = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(
+                Icons.cancel_outlined,
+                size: 18,
+                color: Colors.white,
+              ),
+              label: const Text('Terminate Contract'),
             ),
-            icon: const Icon(Icons.cancel_outlined, size: 18),
-            label: const Text('Terminate Contract'),
-          ),
-        );
+          );
+        }
       } else if (isBeneficiary) {
         return SizedBox(
           width: double.infinity,
@@ -524,7 +647,11 @@ class _ContractCardState extends State<ContractCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.check_circle_outline, size: 18),
+                icon: const Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: Colors.white,
+                ),
                 label: const Text('Confirm Withdrawal'),
               ),
             ),
@@ -540,7 +667,11 @@ class _ContractCardState extends State<ContractCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.cancel_outlined, size: 18),
+                icon: const Icon(
+                  Icons.cancel_outlined,
+                  size: 18,
+                  color: Colors.red,
+                ),
                 label: const Text('Decline Request'),
               ),
             ),
@@ -602,28 +733,144 @@ class _ContractCardState extends State<ContractCard> {
       );
     } else if (widget.contract.status == 'terminated') {
       if (isRemitter) {
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey[300],
-              foregroundColor: Colors.grey[600],
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        return Column(
+          children: [
+            // Termination reason display for terminator
+            if (widget.contract.terminationReason != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your Termination Reason:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.contract.terminationReason!,
+                      style: TextStyle(
+                        color: Colors.red[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: Colors.grey[600],
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.hourglass_empty, size: 18),
+                label: const Text('Waiting for termination approval'),
               ),
             ),
-            icon: const Icon(Icons.hourglass_empty, size: 18),
-            label: const Text('Waiting for termination approval'),
-          ),
+          ],
         );
       } else if (isBeneficiary) {
-        return Row(
+        return Column(
           children: [
-            Expanded(
+            // Termination reason display
+            if (widget.contract.terminationReason != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Termination Reason:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.contract.terminationReason!,
+                      style: TextStyle(
+                        color: Colors.red[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => widget.onApproveTermination?.call(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.check_circle_outline,
+                      size: 16,
+                      color: Colors.red,
+                    ),
+                    label: const Text('Approve Termination'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => widget.onRequestWithdrawal?.call(),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.money_outlined,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Request Withdrawal',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => widget.onApproveTermination?.call(),
+                onPressed: () => _openWhatsApp(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -632,24 +879,12 @@ class _ContractCardState extends State<ContractCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.check_circle_outline, size: 18),
-                label: const Text('Approve Termination'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => widget.onRequestWithdrawal?.call(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.primary,
-                  side: BorderSide(color: theme.colorScheme.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                icon: const Icon(
+                  Icons.support_agent,
+                  size: 18,
+                  color: Colors.white,
                 ),
-                icon: const Icon(Icons.money_outlined, size: 18),
-                label: const Text('Request Withdrawal'),
+                label: const Text('Contact Escrow Support'),
               ),
             ),
           ],
@@ -695,4 +930,24 @@ class _ContractCardState extends State<ContractCard> {
 
     return const SizedBox.shrink();
   }
+
+void _openWhatsApp() async {
+    const phoneNumber = '+255620719589';
+    const message = 'Hello, I need assistance with a contract termination.';
+    final encodedMessage = Uri.encodeComponent(message);
+
+    final url = Uri.parse('https://wa.me/$phoneNumber?text=$encodedMessage');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      debugPrint("Primary method failed, trying fallback...");
+
+      final fallbackUrl =
+          Uri.parse('whatsapp://send?phone=$phoneNumber&text=$encodedMessage');
+
+      if (!await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication)) {
+        debugPrint("Both methods failed");
+      }
+    }
+  }
+
 }

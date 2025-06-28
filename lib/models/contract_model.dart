@@ -20,6 +20,9 @@ class ContractModel {
   final String? beneficiaryName;
   final String? beneficiaryPhone;
 
+  // Termination information
+  final String? terminationReason;
+
   ContractModel({
     required this.id,
     required this.title,
@@ -35,6 +38,7 @@ class ContractModel {
     this.beneficiaryId,
     this.beneficiaryName,
     this.beneficiaryPhone,
+    this.terminationReason,
   });
 
   static Color getStatusColor(String status) {
@@ -99,6 +103,7 @@ class ContractModel {
       'beneficiaryId': beneficiaryId,
       'beneficiaryName': beneficiaryName,
       'beneficiaryPhone': beneficiaryPhone,
+      'terminationReason': terminationReason,
     };
   }
 
@@ -118,6 +123,7 @@ class ContractModel {
       beneficiaryId: map['beneficiaryId'] as String?,
       beneficiaryName: map['beneficiaryName'] as String?,
       beneficiaryPhone: map['beneficiaryPhone'] as String?,
+      terminationReason: map['terminationReason'] as String?,
     );
   }
 }
