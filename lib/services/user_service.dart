@@ -39,4 +39,11 @@ class UserService {
       throw Exception('Failed to get user by phone: $e');
     }
   }
+
+  // Get all users for contacts picker
+  Stream<List<UserModel>> getAllUsers() {
+    return _firestore.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
+    });
+  }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:random_avatar/random_avatar.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../providers/user_provider.dart';
 import '../services/auth_service.dart';
 import 'terms_conditions_screen.dart';
 import 'change_password_screen.dart';
+import 'notification_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -176,7 +178,8 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final theme = Theme.of(context);
-
+    Widget userAvatar = RandomAvatar(userProvider.user?.fullName ?? 'User',
+        trBackground: true, height: 100, width: 100);
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -204,13 +207,8 @@ class ProfileScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.white, width: 3),
                           shape: BoxShape.circle,
-                          image: const DecorationImage(
-                            image: NetworkImage(
-                              "https://avatar.iran.liara.run/public",
-                            ),
-                            fit: BoxFit.cover,
-                          ),
                         ),
+                        child: userAvatar,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -221,7 +219,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        userProvider.user?.email ?? '',
+                        userProvider.user?.phone ?? 'Not set',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withOpacity(0.8),
                         ),
@@ -344,10 +342,11 @@ class ProfileScreen extends StatelessWidget {
                         'Manage notification preferences',
                         Iconsax.notification,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Notification settings coming soon!'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationSettingsScreen(),
                             ),
                           );
                         },
@@ -443,8 +442,14 @@ class ProfileScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      icon: const Icon(Iconsax.logout),
-                      label: const Text('Sign Out'),
+                      icon: const Icon(
+                        Iconsax.logout,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Sign Out',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ],

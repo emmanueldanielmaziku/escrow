@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:escrow_app/services/notification.dart';
 import 'package:flutter/foundation.dart';
 import '../models/contract_model.dart';
+import 'notification.dart';
+import 'notification_settings_service.dart';
 
 class ContractService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -251,6 +252,7 @@ class ContractService {
               fcmToken: receiverToken,
               title: notificationTitle,
               body: notificationBody,
+              notificationType: NotificationType.contractUpdates,
             );
           }
         }
@@ -293,6 +295,7 @@ class ContractService {
                 title: contract.beneficiaryName ?? '',
                 body:
                     'Contract "${contract.title}" has been terminated. Please review the termination reason.',
+                notificationType: NotificationType.contractUpdates,
               );
             }
           }

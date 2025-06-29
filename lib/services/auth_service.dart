@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
+import '../services/notification_settings_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -118,6 +118,9 @@ class AuthService {
       // Save user data to SharedPreferences
       await _saveUserData(userData);
 
+      // Initialize FCM token management after successful registration
+      await NotificationSettingsService.initializeTokenManagement();
+
       return userData;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
@@ -132,7 +135,6 @@ class AuthService {
   }
 
   // Sign in with phone number and password
-
   Future<UserModel> signInWithPhoneAndPassword(
       String phone, String password) async {
     try {
@@ -147,14 +149,6 @@ class AuthService {
 
       final uid = userCredential.user!.uid;
 
-      // Fetch device token
-      final fcmToken = await FirebaseMessaging.instance.getToken();
-
-      // Update Firestore with the device token
-      await _firestore.collection('users').doc(uid).update({
-        'deviceToken': fcmToken,
-      });
-
       // Get updated user data
       final doc = await _firestore.collection('users').doc(uid).get();
 
@@ -166,6 +160,9 @@ class AuthService {
 
       // Save user data locally
       await _saveUserData(userData);
+
+      // Initialize FCM token management after successful login
+      await NotificationSettingsService.initializeTokenManagement();
 
       return userData;
     } on FirebaseAuthException catch (e) {

@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
+import 'services/notification_settings_service.dart';
 import 'providers/user_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
@@ -72,7 +73,6 @@ void main() async {
     onDidReceiveNotificationResponse: (NotificationResponse response) {
       // TODO: Handle tapped notification payload
       print('🔔 Notification tapped: ${response.payload}');
-      
     },
   );
 
@@ -110,11 +110,30 @@ class _EscrowEngineState extends State<EscrowEngine> {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
     // Request notification permissions (especially for iOS)
-    await messaging.requestPermission();
+    final settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
 
-    // Get the device token
-    final token = await messaging.getToken();
-    print('🔑 FCM Token: $token');
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      // Initialize token management based on user preferences
+      await NotificationSettingsService.initializeTokenManagement();
+
+      // Get the device token
+      final token = await messaging.getToken();
+      if (kDebugMode) {
+        print('🔑 FCM Token: $token');
+      }
+    } else {
+      if (kDebugMode) {
+        print('❌ Notification permission denied');
+      }
+    }
 
     // Handle notifications when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -143,7 +162,9 @@ class _EscrowEngineState extends State<EscrowEngine> {
 
     // Handle when app is opened via notification (background or terminated)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('📲 App opened from notification: ${message.data}');
+      if (kDebugMode) {
+        print('📲 App opened from notification: ${message.data}');
+      }
       // TODO: Navigate based on message.data or notification
     });
   }
