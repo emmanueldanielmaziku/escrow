@@ -16,6 +16,8 @@ class CustomTextField extends StatelessWidget {
   final bool enabled;
   final FocusNode? focusNode;
   final void Function(String)? onChanged;
+  final TextInputAction textInputAction;
+  final EdgeInsetsGeometry? contentPadding;
 
   const CustomTextField({
     super.key,
@@ -33,6 +35,8 @@ class CustomTextField extends StatelessWidget {
     this.enabled = true,
     this.focusNode,
     this.onChanged,
+    required this.textInputAction,
+    this.contentPadding,
   });
 
   @override
@@ -61,6 +65,7 @@ class CustomTextField extends StatelessWidget {
           enabled: enabled,
           focusNode: focusNode,
           onChanged: onChanged,
+          textInputAction: textInputAction,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 16,
@@ -75,10 +80,11 @@ class CustomTextField extends StatelessWidget {
             suffix: suffix,
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 14,
-            ),
+            contentPadding: contentPadding ??
+                const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(

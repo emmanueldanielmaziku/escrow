@@ -59,7 +59,7 @@ class _ContractCardState extends State<ContractCard> {
 
   void _onTerminationReasonChanged() {
     setState(() {
-      // This will trigger a rebuild to update the Submit button state
+     
     });
   }
 
@@ -97,7 +97,8 @@ class _ContractCardState extends State<ContractCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -108,7 +109,7 @@ class _ContractCardState extends State<ContractCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status and Price Row
+             
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

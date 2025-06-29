@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:random_avatar/random_avatar.dart';
 import '../providers/user_provider.dart';
-import '../services/auth_service.dart';
 import '../services/contract_service.dart';
 import '../widgets/contract_card.dart';
 import '../models/contract_model.dart';
@@ -371,12 +370,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withOpacity(0.2),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
+
+
+
                       child: Row(
                         children: [
                           Container(
@@ -414,9 +416,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Spacer(),
                           PopupMenuButton<String>(
                             icon: Icon(
-                              Iconsax.sort,
+                              Iconsax.setting_3,
                               color: theme.colorScheme.primary,
-                              size: 20,
+                              size: 22,
                             ),
                             onSelected: (String value) {
                               setState(() {
@@ -429,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      Iconsax.arrow_down_1,
+                                      Iconsax.trend_up,
                                       size: 18,
                                       color: _sortOrder == 'latest'
                                           ? theme.colorScheme.primary
@@ -445,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      Iconsax.arrow_up_1,
+                                      Iconsax.trend_down,
                                       size: 18,
                                       color: _sortOrder == 'oldest'
                                           ? theme.colorScheme.primary

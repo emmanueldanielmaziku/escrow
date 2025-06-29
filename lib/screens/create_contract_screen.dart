@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
@@ -210,6 +212,11 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                   label: 'Phone Number',
                   hint: 'Enter phone number',
                   prefixIcon: const Icon(Iconsax.user, color: Colors.grey),
+                  textInputAction: TextInputAction.next,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   onChanged: (value) {
                     setState(() {
                       _selectedSecondParticipant = null;
@@ -354,7 +361,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                 ],
 
                 const SizedBox(height: 24),
-         Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -371,6 +378,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                       hint: 'Enter contract title',
                       prefixIcon:
                           const Icon(Icons.title_outlined, color: Colors.grey),
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a title';
@@ -382,10 +390,31 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                     CustomTextField(
                       controller: _descriptionController,
                       label: 'Contract Conditions',
-                      hint: 'Enter contract conditions',
-                      prefixIcon: const Icon(Icons.description_outlined,
-                          color: Colors.grey),
-                      maxLines: 3,
+                      hint: '• Enter contract conditions',
+                      prefixIcon: const Icon(
+                        Icons.description_outlined,
+                        color: Colors.grey,
+                      ),
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      onChanged: (value) {
+                        final lines = value.split('\n');
+                        final bulletLines = lines.map((line) {
+                          if (line.trim().isEmpty) return '';
+                          if (line.startsWith('• ')) return line;
+                          return '• $line';
+                        }).join('\n');
+
+                        if (value != bulletLines) {
+                          _descriptionController.value = TextEditingValue(
+                            text: bulletLines,
+                            selection: TextSelection.collapsed(
+                              offset: bulletLines.length,
+                            ),
+                          );
+                        }
+                      },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a description';
@@ -396,11 +425,12 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _rewardController,
-                      label: 'Reward Amount',
+                      label: 'Amount to be secured',
                       hint: 'Enter amount',
                       prefixIcon: const Icon(Icons.attach_money_outlined,
                           color: Colors.grey),
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter an amount';
