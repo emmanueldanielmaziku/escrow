@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+<!-- For Android 6.0 and below -->
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+<!-- For Android 8.0+ -->
+<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+<!-- For reading the APK file -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
         android:label="Escrow"
@@ -25,7 +31,7 @@
               />
             <meta-data
               android:name="com.google.firebase.messaging.default_notification_icon"
-              android:resource="@drawable/ic_stat_notify" />
+              android:resource="@drawable/notification" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

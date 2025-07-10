@@ -389,8 +389,8 @@ class _ContractCardState extends State<ContractCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Delete Contract'),
+                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                label: const Text('Delete Contract', style: TextStyle(color: Colors.red)),
               ),
             ),
           ],
@@ -444,7 +444,7 @@ class _ContractCardState extends State<ContractCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.white),
             label: const Text('Fund Contract'),
           ),
         );
@@ -461,7 +461,7 @@ class _ContractCardState extends State<ContractCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.white),
             label: const Text('Fund Contract'),
           ),
         );
@@ -791,6 +791,7 @@ class _ContractCardState extends State<ContractCard> {
             // Termination reason display
             if (widget.contract.terminationReason != null) ...[
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.05),

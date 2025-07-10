@@ -118,7 +118,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleRequestWithdrawal(ContractModel contract) async {
     try {
-      await _contractService.requestWithdrawal(contract.id);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.requestWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -140,8 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _handleTerminateContract(ContractModel contract,
       {String? terminationReason}) async {
     try {
-      await _contractService.terminateContract(contract.id,
-          terminationReason: terminationReason);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.terminateContract(
+        contract.id,
+        terminationReason: terminationReason,
+        currentUserName: user?.fullName,
+      );
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -162,7 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleConfirmWithdrawal(ContractModel contract) async {
     try {
-      await _contractService.confirmWithdrawal(contract.id);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.confirmWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -183,7 +201,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleDeclineWithdrawal(ContractModel contract) async {
     try {
-      await _contractService.declineWithdrawal(contract.id);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.declineWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -204,7 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleApproveTermination(ContractModel contract) async {
     try {
-      await _contractService.approveTermination(contract.id);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.approveTermination(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
       if (context.mounted) {
         CustomSnackBar.show(
           context: context,
@@ -376,9 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-
-
-
                       child: Row(
                         children: [
                           Container(

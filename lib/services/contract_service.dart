@@ -55,8 +55,8 @@ class ContractService {
 
       await sendFCMV1Notification(
         fcmToken: receiverToken,
-        title: receiverDoc['fullName'],
-        body: contractData.description,
+        title: userFullName,
+        body: 'New contract invitation: "${contractData.title}"',
       );
 
       return contractData;
@@ -108,6 +108,29 @@ class ContractService {
 
       // Update the contract in Firestore
       await contractRef.update(updates);
+
+      // Send notification to the original contract creator
+      final originalCreatorId = contract.role == 'Remitter'
+          ? contract.remitterId
+          : contract.beneficiaryId;
+
+      if (originalCreatorId != null && originalCreatorId != userId) {
+        final creatorDoc =
+            await _firestore.collection('users').doc(originalCreatorId).get();
+
+        if (creatorDoc.exists) {
+          final creatorToken = creatorDoc.data()?['deviceToken'];
+          if (creatorToken != null) {
+            await sendFCMV1Notification(
+              fcmToken: creatorToken,
+              title: userFullName,
+              body:
+                  '$userFullName has accepted your contract "${contract.title}"',
+              notificationType: NotificationType.contractUpdates,
+            );
+          }
+        }
+      }
     } catch (e) {
       throw Exception('Failed to accept contract: $e');
     }
@@ -188,7 +211,11 @@ class ContractService {
   }
 
   // Update contract status
-  Future<void> updateContractStatus(String contractId, String newStatus) async {
+  Future<void> updateContractStatus(
+    String contractId,
+    String newStatus, {
+    String? currentUserName,
+  }) async {
     try {
       final contractDoc =
           await _firestore.collection('contracts').doc(contractId).get();
@@ -208,35 +235,39 @@ class ContractService {
       String notificationTitle;
       String notificationBody;
 
+      // Use current user's name as the sender
+      final senderName = currentUserName ?? 'Someone';
+
       switch (newStatus) {
         case 'active':
           receiverId = contract.beneficiaryId;
-          notificationTitle = contract.beneficiaryName ?? '';
+          notificationTitle = senderName;
           notificationBody =
-              'Your contract "${contract.title}" has been funded and is now active.';
+              '$senderName has funded your contract "${contract.title}" and it is now active.';
           break;
         case 'withdraw':
           receiverId = contract.remitterId;
-          notificationTitle = contract.remitterName ?? '';
+          notificationTitle = senderName;
           notificationBody =
-              'A withdrawal has been requested for contract "${contract.title}".';
+              '$senderName has requested a withdrawal for contract "${contract.title}".';
           break;
         case 'completed':
           receiverId = contract.remitterId;
-          notificationTitle = contract.remitterName ?? '';
+          notificationTitle = senderName;
           notificationBody =
-              'Contract "${contract.title}" has been marked as completed.';
+              '$senderName has marked contract "${contract.title}" as completed.';
           break;
         case 'terminated':
           receiverId = contract.beneficiaryId;
-          notificationTitle = contract.beneficiaryName ?? '';
+          notificationTitle = senderName;
           notificationBody =
-              'Contract "${contract.title}" has been terminated.';
+              '$senderName has terminated contract "${contract.title}".';
           break;
         case 'closed':
           receiverId = contract.remitterId;
-          notificationTitle = contract.remitterName ?? '';
-          notificationBody = 'Contract "${contract.title}" has been closed.';
+          notificationTitle = senderName;
+          notificationBody =
+              '$senderName has closed contract "${contract.title}".';
           break;
         default:
           return;
@@ -263,8 +294,11 @@ class ContractService {
   }
 
   // Terminate contract
-  Future<void> terminateContract(String contractId,
-      {String? terminationReason}) async {
+  Future<void> terminateContract(
+    String contractId, {
+    String? terminationReason,
+    String? currentUserName,
+  }) async {
     try {
       final updates = {
         'status': 'terminated',
@@ -290,11 +324,12 @@ class ContractService {
           if (receiverDoc.exists) {
             final receiverToken = receiverDoc.data()?['deviceToken'];
             if (receiverToken != null) {
+              final senderName = currentUserName ?? 'Someone';
               await sendFCMV1Notification(
                 fcmToken: receiverToken,
-                title: contract.beneficiaryName ?? '',
+                title: senderName,
                 body:
-                    'Contract "${contract.title}" has been terminated. Please review the termination reason.',
+                    '$senderName has terminated contract "${contract.title}". Please review the termination reason.',
                 notificationType: NotificationType.contractUpdates,
               );
             }
@@ -307,27 +342,37 @@ class ContractService {
   }
 
   // Request withdrawal
-  Future<void> requestWithdrawal(String contractId) async {
-    await updateContractStatus(contractId, 'withdraw');
+  Future<void> requestWithdrawal(String contractId,
+      {String? currentUserName}) async {
+    await updateContractStatus(contractId, 'withdraw',
+        currentUserName: currentUserName);
   }
 
   // Confirm withdrawal
-  Future<void> confirmWithdrawal(String contractId) async {
-    await updateContractStatus(contractId, 'completed');
+  Future<void> confirmWithdrawal(String contractId,
+      {String? currentUserName}) async {
+    await updateContractStatus(contractId, 'completed',
+        currentUserName: currentUserName);
   }
 
   // Decline withdrawal request
-  Future<void> declineWithdrawal(String contractId) async {
-    await updateContractStatus(contractId, 'active');
+  Future<void> declineWithdrawal(String contractId,
+      {String? currentUserName}) async {
+    await updateContractStatus(contractId, 'active',
+        currentUserName: currentUserName);
   }
 
   // Approve termination
-  Future<void> approveTermination(String contractId) async {
-    await updateContractStatus(contractId, 'closed');
+  Future<void> approveTermination(String contractId,
+      {String? currentUserName}) async {
+    await updateContractStatus(contractId, 'closed',
+        currentUserName: currentUserName);
   }
 
   // Close contract
-  Future<void> closeContract(String contractId) async {
-    await updateContractStatus(contractId, 'closed');
+  Future<void> closeContract(String contractId,
+      {String? currentUserName}) async {
+    await updateContractStatus(contractId, 'closed',
+        currentUserName: currentUserName);
   }
 }
