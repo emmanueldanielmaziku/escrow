@@ -102,6 +102,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
       await _contractService.updateContractStatus(
         widget.contract.id,
         'active',
+        currentUserName: user.fullName,
       );
 
       if (mounted) {

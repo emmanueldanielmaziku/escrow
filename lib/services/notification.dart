@@ -61,7 +61,7 @@ Future<void> sendFCMV1Notification({
         "android": {
           "priority": "high",
           "notification": {
-            "icon": "ic_stat_notify",
+            "icon": "notification",
             "color": "#2196F3",
             "sound": "default"
           }
@@ -97,7 +97,7 @@ Future<void> sendFCMV1Notification({
           print(
               '❌ FCM Token is unregistered. User may have uninstalled the app or token expired.');
         }
-        // TODO: Remove the invalid token from Firestore
+
         await _removeInvalidToken(fcmToken);
       }
     }

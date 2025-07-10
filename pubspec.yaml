@@ -25,9 +25,11 @@ dependencies:
   url_launcher: ^6.2.5
   random_avatar: ^0.0.8
   rich_field_controller: ^0.2.1
+  package_info_plus: ^4.0.0
+  dio: ^5.0.0
+
 
   http: ^1.4.0
-  # Other dependencies
   provider: ^6.1.1
   shared_preferences: ^2.2.2
   image_picker: ^1.0.7
@@ -36,6 +38,8 @@ dependencies:
   share_plus: ^11.0.0
   google_fonts: ^6.1.0
   iconsax: ^0.0.8
+  permission_handler: ^11.0.1
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
@@ -52,7 +56,6 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
-
 
   assets:
     - assets/icons/

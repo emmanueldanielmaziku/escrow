@@ -17,6 +17,7 @@ import 'screens/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 
+
 // Notification plugin instance
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -71,7 +72,6 @@ void main() async {
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) {
-      // TODO: Handle tapped notification payload
       print('🔔 Notification tapped: ${response.payload}');
     },
   );
@@ -104,12 +104,13 @@ class _EscrowEngineState extends State<EscrowEngine> {
   void initState() {
     super.initState();
     _initFirebaseMessaging();
+
   }
 
   void _initFirebaseMessaging() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    // Request notification permissions (especially for iOS)
+ 
     final settings = await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -152,20 +153,19 @@ class _EscrowEngineState extends State<EscrowEngine> {
               channelDescription: 'Default notification channel',
               importance: Importance.max,
               priority: Priority.high,
-              icon: '@mipmap/ic_launcher',
+              icon: 'notification',
             ),
           ),
-          payload: message.data['payload'], // Optional payload
+          payload: message.data['payload'],
         );
       }
     });
 
-    // Handle when app is opened via notification (background or terminated)
+    // Handle when app is opened via notification (background or terminated
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       if (kDebugMode) {
         print('📲 App opened from notification: ${message.data}');
       }
-      // TODO: Navigate based on message.data or notification
     });
   }
 
