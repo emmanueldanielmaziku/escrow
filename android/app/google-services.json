@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:252434664184:android:4d387b42905f1b7a30090d",
         "android_client_info": {
-          "package_name": "com.example.escrow"
+          "package_name": "com.app.escrow"
         }
       },
       "oauth_client": [],
