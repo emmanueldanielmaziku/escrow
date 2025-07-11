@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '252434664184',
     projectId: 'escrow-app-7702f',
     storageBucket: 'escrow-app-7702f.firebasestorage.app',
-    iosBundleId: 'com.example.escrow',
+    iosBundleId: 'com.app.escrow',
   );
 }
