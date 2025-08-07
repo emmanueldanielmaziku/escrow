@@ -4,7 +4,7 @@
 <!-- For Android 6.0 and below -->
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 <!-- For Android 8.0+ -->
-<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
 <!-- For reading the APK file -->
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 

@@ -8,6 +8,8 @@ import '../services/auth_service.dart';
 import 'terms_conditions_screen.dart';
 import 'change_password_screen.dart';
 import 'notification_settings_screen.dart';
+import 'delete_account_webview.dart';
+import 'privacy_policy_webview.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -386,9 +388,11 @@ class ProfileScreen extends StatelessWidget {
                         'Read our privacy policy',
                         Iconsax.shield_tick,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Privacy policy coming soon!'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const PrivacyPolicyWebView(),
                             ),
                           );
                         },
@@ -396,61 +400,94 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final authService = Provider.of<AuthService>(
-                            context,
-                            listen: false,
-                          );
-                          final userProvider = Provider.of<UserProvider>(
-                            context,
-                            listen: false,
-                          );
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            try {
+                              final authService = Provider.of<AuthService>(
+                                context,
+                                listen: false,
+                              );
+                              final userProvider = Provider.of<UserProvider>(
+                                context,
+                                listen: false,
+                              );
 
-                          // Clear user data from provider
-                          userProvider.clearUser();
+                              // Clear user data from provider
+                              userProvider.clearUser();
 
-                          // Sign out from auth service
-                          await authService.signOut();
+                              // Sign out from auth service
+                              await authService.signOut();
 
-                          if (context.mounted) {
-                            // Navigate to login screen
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/',
-                              (route) => false,
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error signing out: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                              if (context.mounted) {
+                                // Navigate to login screen
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/',
+                                  (route) => false,
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error signing out: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Iconsax.logout,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Sign Out',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
-                      icon: const Icon(
-                        Iconsax.logout,
-                        color: Colors.white,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const DeleteAccountWebView(),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: Colors.grey),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Iconsax.trash,
+                            color: Colors.black,
+                          ),
+                          label: const Text(
+                            'Delete Account',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
                       ),
-                      label: const Text(
-                        'Sign Out',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
