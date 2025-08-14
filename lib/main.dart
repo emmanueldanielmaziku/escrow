@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -67,8 +68,20 @@ void main() async {
   // Local notifications setup
   const AndroidInitializationSettings androidInitSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  const InitializationSettings initSettings =
-      InitializationSettings(android: androidInitSettings);
+  const DarwinInitializationSettings darwinInitSettings =
+      DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+    defaultPresentAlert: true,
+    defaultPresentBadge: true,
+    defaultPresentSound: true,
+    notificationCategories: [],
+  );
+  const InitializationSettings initSettings = InitializationSettings(
+    android: androidInitSettings,
+    iOS: darwinInitSettings,
+  );
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -88,6 +101,16 @@ void main() async {
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
+
+  // iOS notification channel setup
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
   runApp(const EscrowEngine());
 }
@@ -110,7 +133,7 @@ class _EscrowEngineState extends State<EscrowEngine> {
   void _initFirebaseMessaging() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
- 
+    // Request notification permissions
     final settings = await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -125,10 +148,47 @@ class _EscrowEngineState extends State<EscrowEngine> {
       // Initialize token management based on user preferences
       await NotificationSettingsService.initializeTokenManagement();
 
-      // Get the device token
-      final token = await messaging.getToken();
-      if (kDebugMode) {
-        print('🔑 FCM Token: $token');
+      // On iOS, wait for APNS token before getting FCM token
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // Wait for APNS token to be available
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Check if APNS token is available
+        final apnsToken = await messaging.getAPNSToken();
+        if (kDebugMode) {
+          print('🍎 APNS Token: $apnsToken');
+        }
+        
+        if (apnsToken != null) {
+          // Get the FCM token
+          final token = await messaging.getToken();
+          if (kDebugMode) {
+            print('🔑 FCM Token: $token');
+          }
+        } else {
+          if (kDebugMode) {
+            print('⚠️ APNS token not available yet, will retry later');
+          }
+          // Retry after a delay
+          Future.delayed(const Duration(seconds: 5), () async {
+            try {
+              final token = await messaging.getToken();
+              if (kDebugMode) {
+                print('🔑 FCM Token (retry): $token');
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                print('❌ Error getting FCM token: $e');
+              }
+            }
+          });
+        }
+      } else {
+        // On Android, get token directly
+        final token = await messaging.getToken();
+        if (kDebugMode) {
+          print('🔑 FCM Token: $token');
+        }
       }
     } else {
       if (kDebugMode) {
@@ -167,6 +227,25 @@ class _EscrowEngineState extends State<EscrowEngine> {
         print('📲 App opened from notification: ${message.data}');
       }
     });
+
+    // Set up a periodic check for FCM token on iOS if initial attempt failed
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      Timer.periodic(const Duration(seconds: 10), (timer) async {
+        try {
+          final token = await messaging.getToken();
+          if (token != null) {
+            if (kDebugMode) {
+              print('🔑 FCM Token (periodic check): $token');
+            }
+            timer.cancel(); // Stop checking once we get the token
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('⚠️ Periodic FCM token check failed: $e');
+          }
+        }
+      });
+    }
   }
 
   @override

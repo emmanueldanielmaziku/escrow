@@ -45,5 +45,23 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Notification permissions -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app needs to send you notifications about contract updates and important events.</string>
+	
+	<!-- Background modes for notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>background-processing</string>
+	</array>
+	
+	<!-- Notification categories -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to scan documents and take photos.</string>
+	
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select images for your profile.</string>
 </dict>
 </plist>
