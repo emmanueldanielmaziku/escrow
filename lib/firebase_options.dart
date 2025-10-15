@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -49,20 +40,49 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCv9kWcujz4MHZFs6qm-DXEDRd6EevW4tQ',
+    appId: '1:349602176987:web:8599624f398567be89d1fe',
+    messagingSenderId: '349602176987',
+    projectId: 'mai-escrow',
+    authDomain: 'mai-escrow.firebaseapp.com',
+    storageBucket: 'mai-escrow.firebasestorage.app',
+    measurementId: 'G-35ET8PZSSB',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAO5_6cBX3FDD78lW2I_EeQWYQrxrf47eo',
-    appId: '1:252434664184:android:4d387b42905f1b7a30090d',
-    messagingSenderId: '252434664184',
-    projectId: 'escrow-app-7702f',
-    storageBucket: 'escrow-app-7702f.firebasestorage.app',
+    apiKey: 'AIzaSyAG_RPKhPG6fvSLchU-3FugHdFoyy3EOEw',
+    appId: '1:349602176987:android:4ade93eeb0400c9f89d1fe',
+    messagingSenderId: '349602176987',
+    projectId: 'mai-escrow',
+    storageBucket: 'mai-escrow.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBlZU_Nzw7ssTgERMmEBsPrcT_-yI7B2dM',
-    appId: '1:252434664184:ios:2ca79876efeab20930090d',
-    messagingSenderId: '252434664184',
-    projectId: 'escrow-app-7702f',
-    storageBucket: 'escrow-app-7702f.firebasestorage.app',
+    apiKey: 'AIzaSyBT63SFUYVCukVICPzpsRFv7nHLupoOdlE',
+    appId: '1:349602176987:ios:8bbc90d8cd352c5389d1fe',
+    messagingSenderId: '349602176987',
+    projectId: 'mai-escrow',
+    storageBucket: 'mai-escrow.firebasestorage.app',
+    iosBundleId: 'mai.app.escrow',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyBT63SFUYVCukVICPzpsRFv7nHLupoOdlE',
+    appId: '1:349602176987:ios:c0fc1e2432c02e1a89d1fe',
+    messagingSenderId: '349602176987',
+    projectId: 'mai-escrow',
+    storageBucket: 'mai-escrow.firebasestorage.app',
     iosBundleId: 'com.app.escrow',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCv9kWcujz4MHZFs6qm-DXEDRd6EevW4tQ',
+    appId: '1:349602176987:web:59c208426ca5bf0089d1fe',
+    messagingSenderId: '349602176987',
+    projectId: 'mai-escrow',
+    authDomain: 'mai-escrow.firebaseapp.com',
+    storageBucket: 'mai-escrow.firebasestorage.app',
+    measurementId: 'G-M78BDRMQ2T',
   );
 }

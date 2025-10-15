@@ -29,7 +29,7 @@ class UserProvider extends ChangeNotifier {
         walletNumber: _user!.walletNumber,
         balance: newBalance,
         totalContracts: _user!.totalContracts,
-        totalInvitations: _user!.totalInvitations,
+        totalInvitations: _user!.totalInvitations, nidaNumber: '',
       );
       notifyListeners();
     }
@@ -45,7 +45,7 @@ class UserProvider extends ChangeNotifier {
         walletNumber: _user!.walletNumber,
         balance: _user!.balance,
         totalContracts: newCount,
-        totalInvitations: _user!.totalInvitations,
+        totalInvitations: _user!.totalInvitations, nidaNumber: '',
       );
       notifyListeners();
     }

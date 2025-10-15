@@ -13,13 +13,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailOrPhoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -35,8 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final userProvider = Provider.of<UserProvider>(context, listen: false);
 
         // Sign in user
-        final user = await authService.signInWithPhoneAndPassword(
-          _phoneController.text.trim(),
+        final user = await authService.signInWithEmailOrPhoneAndPassword(
+          _emailOrPhoneController.text.trim(),
           _passwordController.text,
         );
 
@@ -106,12 +106,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
+                            controller: _emailOrPhoneController,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
-                              labelText: 'Phone Number',
-                              hintText: 'e.g. 0758376759',
-                              prefixIcon: const Icon(Icons.phone_outlined,
+                              labelText: 'Email or Phone Number',
+                              hintText: 'e.g. john@example.com or 0758376759',
+                              prefixIcon: const Icon(Icons.person_outline,
                                   color: Colors.grey),
                               filled: true,
                               fillColor: Colors.white,
@@ -145,10 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your phone number';
-                              }
-                              if (value.length < 10) {
-                                return 'Please enter a valid phone number';
+                                return 'Please enter your email or phone number';
                               }
                               return null;
                             },
@@ -235,7 +232,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    // Forgot Password link
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/forgot-password');
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: Color(0xFF22C55E),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
