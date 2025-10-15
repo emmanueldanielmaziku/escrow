@@ -3,6 +3,7 @@ class UserModel {
   final String fullName;
   final String phone;
   final String email;
+  final String nidaNumber;
   final String walletNumber;
   final double balance;
   final int totalContracts;
@@ -13,6 +14,7 @@ class UserModel {
     required this.fullName,
     required this.phone,
     required this.email,
+    required this.nidaNumber,
     required this.walletNumber,
     required this.balance,
     required this.totalContracts,
@@ -25,6 +27,7 @@ class UserModel {
       fullName: json['fullName'] ?? '',
       phone: json['phone'],
       email: json['email'],
+      nidaNumber: json['nidaNumber'] ?? '',
       walletNumber: json['walletNumber'],
       balance: json['balance'].toDouble(),
       totalContracts: json['totalContracts'],
@@ -37,6 +40,7 @@ class UserModel {
       'fullName': fullName,
       'phone': phone,
       'email': email,
+      'nidaNumber': nidaNumber,
       'walletNumber': walletNumber,
       'balance': balance,
       'totalContracts': totalContracts,
@@ -50,6 +54,7 @@ class UserModel {
       fullName: map['fullName'] as String,
       phone: map['phone'] as String,
       email: map['email'] as String,
+      nidaNumber: map['nidaNumber'] as String? ?? '',
       walletNumber: map['walletNumber'] as String,
       balance: (map['balance'] as num).toDouble(),
       totalContracts: (map['totalContracts'] as num).toInt(),
@@ -63,6 +68,7 @@ class UserModel {
       'fullName': fullName,
       'phone': phone,
       'email': email,
+      'nidaNumber': nidaNumber,
       'walletNumber': walletNumber,
       'balance': balance,
       'totalContracts': totalContracts,
@@ -75,6 +81,7 @@ class UserModel {
     String? fullName,
     String? phone,
     String? email,
+    String? nidaNumber,
     String? walletNumber,
     double? balance,
     int? totalContracts,
@@ -85,6 +92,7 @@ class UserModel {
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       email: email ?? this.email,
+      nidaNumber: nidaNumber ?? this.nidaNumber,
       walletNumber: walletNumber ?? this.walletNumber,
       balance: balance ?? this.balance,
       totalContracts: totalContracts ?? this.totalContracts,

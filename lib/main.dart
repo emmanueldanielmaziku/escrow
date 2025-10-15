@@ -17,6 +17,7 @@ import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 
 
 // Notification plugin instance
@@ -272,6 +273,7 @@ class _EscrowEngineState extends State<EscrowEngine> {
           '/profile': (context) => const ProfileScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
         },
       ),
     );

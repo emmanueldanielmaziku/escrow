@@ -19,7 +19,7 @@ plugins {
 android {
     namespace = "com.app.escrow"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
         applicationId = "com.app.escrow"
@@ -41,11 +41,13 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
-            storePassword = keystoreProperties["storePassword"] as String?
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
+                storePassword = keystoreProperties["storePassword"] as String?
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+            }
         }
     }
 
@@ -54,7 +56,9 @@ android {
         getByName("release") {
             isShrinkResources = true
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

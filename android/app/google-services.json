@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "252434664184",
-    "project_id": "escrow-app-7702f",
-    "storage_bucket": "escrow-app-7702f.firebasestorage.app"
+    "project_number": "349602176987",
+    "project_id": "mai-escrow",
+    "storage_bucket": "mai-escrow.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:252434664184:android:4d387b42905f1b7a30090d",
+        "mobilesdk_app_id": "1:349602176987:android:4ade93eeb0400c9f89d1fe",
         "android_client_info": {
           "package_name": "com.app.escrow"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAO5_6cBX3FDD78lW2I_EeQWYQrxrf47eo"
+          "current_key": "AIzaSyAG_RPKhPG6fvSLchU-3FugHdFoyy3EOEw"
         }
       ],
       "services": {
