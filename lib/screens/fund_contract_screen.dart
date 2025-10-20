@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/deposit_service.dart';
 import '../services/contract_service.dart';
+import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
 
 class FundContractScreen extends StatefulWidget {
@@ -21,41 +23,36 @@ class FundContractScreen extends StatefulWidget {
 
 class _FundContractScreenState extends State<FundContractScreen> {
   final _depositService = DepositService();
-  final _paymentMessageController = TextEditingController();
+  final _paymentService = PaymentService();
+  final _phoneNumberController = TextEditingController();
+  final _phoneFocusNode = FocusNode();
   String? _selectedProvider;
   bool _isLoading = false;
- 
+
   final _contractService = ContractService();
 
   final Map<String, Map<String, String>> _paymentProviders = {
-    'Mix by Yas Agent': {
-      'number': '864706',
+    'Mix by Yas': {
+      'channel': 'TZ-TIGO-C2B',
       'logo': 'assets/icons/mixx.png',
     },
-    'Selcom Agent': {
-      'number': '61135943',
-      'logo': 'assets/icons/selcom.png',
-    },
-    'Halopesa': {
-      'number': '678387',
-      'logo': 'assets/icons/halopesa.png',
-    },
-    'NMB Lipa Namba': {
-      'number': '21262098',
-      'logo': 'assets/icons/nmb.webp',
+    'Airtel Money': {
+      'channel': 'TZ-AIRTEL-C2B',
+      'logo': 'assets/icons/airtel.png',
     },
   };
 
   @override
   void dispose() {
-    _paymentMessageController.dispose();
+    _phoneNumberController.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _handlePaste() async {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
     if (clipboardData?.text != null) {
-      _paymentMessageController.text = clipboardData!.text!;
+      _phoneNumberController.text = clipboardData!.text!;
     }
   }
 
@@ -69,10 +66,10 @@ class _FundContractScreenState extends State<FundContractScreen> {
       return;
     }
 
-    if (_paymentMessageController.text.isEmpty) {
+    if (_phoneNumberController.text.isEmpty) {
       CustomSnackBar.show(
         context: context,
-        message: 'Please paste the payment confirmation message',
+        message: 'Please enter your phone number',
         type: SnackBarType.error,
       );
       return;
@@ -90,15 +87,40 @@ class _FundContractScreenState extends State<FundContractScreen> {
         throw Exception('User not found');
       }
 
+      // Format phone number to international format
+      String formattedMsisdn = _phoneNumberController.text.trim();
+      if (!formattedMsisdn.startsWith('255')) {
+        if (formattedMsisdn.startsWith('0')) {
+          formattedMsisdn = '255${formattedMsisdn.substring(1)}';
+        } else {
+          formattedMsisdn = '255$formattedMsisdn';
+        }
+      }
+
+      // Initiate payment via API
+      await _paymentService.initiatePayment(
+        contractId: widget.contract.id,
+        amount: widget.contract.reward,
+        initiatorId: user.id, // Remitter's Firebase ID
+        beneficiaryId:
+            widget.contract.beneficiaryId ?? '', // Beneficiary's Firebase ID
+        currency: 'TZS',
+        msisdn: formattedMsisdn,
+        channel: _paymentProviders[_selectedProvider]!['channel']!,
+        narration: 'Payment for contract ${widget.contract.id}',
+      );
+
+      // Create deposit record
       await _depositService.createDeposit(
         contractId: widget.contract.id,
         userId: user.id,
         provider: _selectedProvider!,
         contractFund: widget.contract.reward.toString(),
-        controlNumber: _paymentProviders[_selectedProvider]!['number']!,
-        paymentMessage: _paymentMessageController.text,
+        channel: _paymentProviders[_selectedProvider]!['channel']!,
+        paymentMessage: _phoneNumberController.text,
       );
 
+      // Update contract status
       await _contractService.updateContractStatus(
         widget.contract.id,
         'active',
@@ -108,7 +130,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
       if (mounted) {
         CustomSnackBar.show(
           context: context,
-          message: 'Your payment request has been sent for approval',
+          message: 'Payment initiated successfully',
           type: SnackBarType.success,
         );
         Navigator.pop(context);
@@ -117,7 +139,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
       if (mounted) {
         CustomSnackBar.show(
           context: context,
-          message: 'Error submitting payment: $e',
+          message: 'Error initiating payment: $e',
           type: SnackBarType.error,
         );
       }
@@ -132,293 +154,402 @@ class _FundContractScreenState extends State<FundContractScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
           'Fund Contract',
-          style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 18.0,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Contract Amount Display
+            // Header Section with Gradient
             Container(
-              padding: const EdgeInsets.all(16),
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.green.withOpacity(0.3),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.green, Colors.green, Colors.green],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+              child: Column(
                 children: [
-                  const Text(
-                    'Contract Amount:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'TSh ${widget.contract.reward.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Title/Instruction
-            RichText(
-              text: TextSpan(
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 14.0,
-                  color: Colors.grey[700],
-                ),
-                children: [
-                  TextSpan(
-                    text: 'Gateway Name: ',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextSpan(
-                      text: 'Mai Money',
-                      style: TextStyle(
-                        fontSize: 16.0,
-                        color: Colors.green[500],
-                        fontWeight: FontWeight.bold,
-                      )),
-                ],
-              ),
-            ),
-            const SizedBox(height: 5.0),
-            RichText(
-              text: TextSpan(
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 14.0,
-                  color: Colors.grey[700],
-                ),
-                children: [
-                  TextSpan(
-                    text: 'Note: ',
-                    style: TextStyle(
-                      color: Colors.red[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  TextSpan(
-                      text: 'Please choose your payment gateway.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                      )),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Payment Provider Cards
-            ..._paymentProviders.entries.map((entry) {
-              final isSelected = _selectedProvider == entry.key;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _selectedProvider = entry.key;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
+                  // Contract Amount Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? Colors.green : Colors.grey.shade300,
-                        width: isSelected ? 2 : 1,
-                      ),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
+                        const Text(
+                          'Contract Amount',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'TSh ${widget.contract.reward.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E7D32),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Container(
-                          width: 24,
-                          height: 24,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : Colors.grey.shade400,
-                              width: 2,
+                            color: const Color(0xFF2E7D32).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Mai Money',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2E7D32),
                             ),
                           ),
-                          child: isSelected
-                              ? Icon(
-                                  Icons.check_circle,
-                                  size: 20,
-                                  color: theme.colorScheme.primary,
-                                )
-                              : null,
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content Section
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section Title
+                  const Text(
+                    'Select Payment Method',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose your preferred payment provider',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Payment Provider Cards
+                  ..._paymentProviders.entries.map((entry) {
+                    final isSelected = _selectedProvider == entry.key;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedProvider = entry.key;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF2E7D32)
+                                  : Colors.grey[300]!,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF2E7D32)
+                                          .withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
+                          ),
                           child: Row(
                             children: [
+                              // Radio Button
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF2E7D32)
+                                        : Colors.grey[400]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Center(
+                                        child: Icon(
+                                          Icons.check_circle,
+                                          size: 16,
+                                          color: Color(0xFF2E7D32),
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Provider Info
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       entry.key,
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
+                                      style: const TextStyle(
+                                        fontSize: 16,
                                         fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2E7D32),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      entry.value['number'] ?? '',
-                                      style:
-                                          theme.textTheme.bodyMedium?.copyWith(
+                                      'Channel: ${entry.value['channel']}',
+                                      style: TextStyle(
+                                        fontSize: 12,
                                         color: Colors.grey[600],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Image.asset(entry.value['logo']!,
-                                  scale: entry.value['logo'] ==
-                                          "assets/icons/mixx.png"
-                                      ? 12.0
-                                      : entry.value['logo'] ==
-                                              "assets/icons/nmb.webp"
-                                          ? 10.0
-                                          : entry.value['logo'] ==
-                                                  "assets/icons/selcom.png"
-                                              ? 5.0
-                                              : entry.value['logo'] ==
-                                                      "assets/icons/halopesa.png"
-                                                  ? 12.0
-                                                  : 10.0),
+
+                              // Provider Logo
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey[200]!,
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.asset(
+                                    entry.value['logo']!,
+                                    scale: entry.value['logo'] ==
+                                            "assets/icons/mixx.png"
+                                        ? 12.0
+                                        : entry.value['logo'] ==
+                                                "assets/icons/airtel.png"
+                                            ? 23.0
+                                            : 10.0,
+                                  ),
+                                ),
+                              ),
                             ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 32),
+
+                  // Phone Number Section
+                  const Text(
+                    'Phone Number',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Enter your phone number for payment verification',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone Number Input
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _phoneFocusNode.hasFocus
+                            ? const Color(0xFF2E7D32)
+                            : Colors.grey[300]!,
+                        width: _phoneFocusNode.hasFocus ? 2 : 1,
+                      ),
+                      boxShadow: _phoneFocusNode.hasFocus
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _phoneNumberController,
+                            focusNode: _phoneFocusNode,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            style: const TextStyle(fontSize: 16),
+                            onTap: () {
+                              setState(() {});
+                            },
+                            onChanged: (value) {
+                              setState(() {});
+                            },
+                            decoration: const InputDecoration(
+                              hintText: '0758376759',
+                              hintStyle: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                              contentPadding: EdgeInsets.all(20),
+                              border: InputBorder.none,
+                              prefixIcon: Icon(
+                                Icons.phone_outlined,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          child: IconButton(
+                            onPressed: _handlePaste,
+                            icon: const Icon(
+                              Icons.paste_outlined,
+                              color: Color(0xFF2E7D32),
+                            ),
+                            tooltip: 'Paste from clipboard',
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              );
-            }),
 
-            const SizedBox(height: 15.0),
+                  const SizedBox(height: 32),
 
-            // Instruction Text
-            RichText(
-              text: TextSpan(
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 14.0,
-                  color: Colors.grey[700],
-                ),
-                children: [
-                  TextSpan(
-                    text: 'Note: ',
-                    style: TextStyle(
-                      color: Colors.red[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  TextSpan(
-                      text:
-                          'After completing the payment, please copy the payment confirmation SMS from your phone and paste it below.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                      )),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Payment Message Input
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _paymentMessageController,
-                      maxLines: 4,
-                      style: TextStyle(fontSize: 14.0),
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Eg: 0604135KT Confirmed. You have sent TZS 2,000.00 to EMMANUEL DANIEL MAZIKU - M-Pesa (0758376759) on 2025-06-04 17:42:02. TIPS reference CF44ID9ZH8Y. Help 0800 714 888/ 0800 784 888',
-                        hintStyle:
-                            TextStyle(fontSize: 14.0, color: Colors.grey),
-                        contentPadding: EdgeInsets.all(14),
-                        border: InputBorder.none,
+                  // Submit Button
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _handlePaste,
-                    icon: const Icon(Icons.paste_outlined),
-                    tooltip: 'Paste from clipboard',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleSubmit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2E7D32).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
-                      )
-                    : const Text(
-                        'Submit Fund Request',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
+                      child: _isLoading
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                CupertinoActivityIndicator(
+                                  radius: 10,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Processing Payment',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'Submit Fund Request',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -5,7 +5,7 @@ class DepositModel {
   final String userId;
   final String provider;
   final String contractFund;
-  final String controlNumber;
+  final String channel;
   final String paymentMessage;
   final DateTime createdAt;
   final String status;
@@ -16,7 +16,7 @@ class DepositModel {
     required this.userId,
     required this.provider,
     required this.contractFund,
-    required this.controlNumber,
+    required this.channel,
     required this.paymentMessage,
     required this.createdAt,
     this.status = 'pending',
@@ -29,7 +29,7 @@ class DepositModel {
       'userId': userId,
       'provider': provider,
       'contractFund': contractFund,
-      'controlNumber': controlNumber,
+      'channel': channel,
       'paymentMessage': paymentMessage,
       'createdAt': createdAt.toIso8601String(),
       'status': status,
@@ -43,7 +43,7 @@ class DepositModel {
       userId: map['userId'] as String,
       provider: map['provider'] as String,
       contractFund: map['contractFund'] as String,
-      controlNumber: map['controlNumber'] as String,
+      channel: map['channel'] as String,
       paymentMessage: map['paymentMessage'] as String,
       createdAt: DateTime.parse(map['createdAt'] as String),
       status: map['status'] as String,

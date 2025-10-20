@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       'Welcome Back!',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF22C55E),
                       ),
@@ -96,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       'Sign in to continue.',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Colors.black54,
                       ),
                     ),
@@ -153,12 +154,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Password',
                               hintText: '********',
                               prefixIcon: const Icon(Icons.lock_outline,
                                   color: Colors.grey),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
                               filled: true,
                               fillColor: Colors.white,
                               border: OutlineInputBorder(
@@ -234,8 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Forgot Password link
-                    Align(
-                      alignment: Alignment.centerRight,
+                    Center(
                       child: TextButton(
                         onPressed: () {
                           Navigator.of(context).pushNamed('/forgot-password');

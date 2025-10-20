@@ -1,1 +1,45 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mai-escrow","appId":"1:349602176987:android:4ade93eeb0400c9f89d1fe","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"mai-escrow","appId":"1:349602176987:ios:8bbc90d8cd352c5389d1fe","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"mai-escrow","appId":"1:349602176987:ios:c0fc1e2432c02e1a89d1fe","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"mai-escrow","configurations":{"android":"1:349602176987:android:4ade93eeb0400c9f89d1fe","ios":"1:349602176987:ios:8bbc90d8cd352c5389d1fe","macos":"1:349602176987:ios:c0fc1e2432c02e1a89d1fe","web":"1:349602176987:web:8599624f398567be89d1fe","windows":"1:349602176987:web:59c208426ca5bf0089d1fe"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mai-escrow",
+          "appId": "1:349602176987:android:4ade93eeb0400c9f89d1fe",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "mai-escrow",
+          "appId": "1:349602176987:ios:8bbc90d8cd352c5389d1fe",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "mai-escrow",
+          "appId": "1:349602176987:ios:c0fc1e2432c02e1a89d1fe",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mai-escrow",
+          "configurations": {
+            "android": "1:349602176987:android:4ade93eeb0400c9f89d1fe",
+            "ios": "1:349602176987:ios:8bbc90d8cd352c5389d1fe",
+            "macos": "1:349602176987:ios:c0fc1e2432c02e1a89d1fe",
+            "web": "1:349602176987:web:8599624f398567be89d1fe",
+            "windows": "1:349602176987:web:59c208426ca5bf0089d1fe"
+          }
+        }
+      }
+    }
+  }
+}

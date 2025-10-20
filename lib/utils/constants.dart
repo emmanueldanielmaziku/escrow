@@ -1,4 +1,7 @@
 class AppConstants {
+  // API Configuration
+  static const String baseUrl = 'https://a315eb85bf17.ngrok-free.app';
+
   // Collections
   static const String usersCollection = 'users';
   static const String contractsCollection = 'contracts';
@@ -20,18 +23,16 @@ class AppConstants {
   static const String contractConfirmedMsg = 'Task completion confirmed';
   static const String contractRejectedMsg = 'Task completion rejected';
   static const String contractUpdatedMsg = 'Contract status updated';
-  static const String paymentUploadedMsg = 'Payment proof uploaded successfully';
-  static const String insufficientBalanceMsg = 'Insufficient balance. Please recharge your account.';
-  static const String depositPendingMsg = 'Deposit request submitted. Waiting for admin approval.';
+  static const String paymentUploadedMsg =
+      'Payment proof uploaded successfully';
+  static const String insufficientBalanceMsg =
+      'Insufficient balance. Please recharge your account.';
+  static const String depositPendingMsg =
+      'Deposit request submitted. Waiting for admin approval.';
   static const String depositApprovedMsg = 'Deposit approved. Balance updated.';
-  static const String depositRejectedMsg = 'Deposit rejected. Please contact support.';
+  static const String depositRejectedMsg =
+      'Deposit rejected. Please contact support.';
 
-  // Mobile Money Numbers
-  static const Map<String, String> mobileMoneyNumbers = {
-    'Vodacom M-Pesa': '0755 123 456',
-    'Airtel Money': '0655 789 012',
-    'Tigo Pesa': '0655 345 678',
-  };
 
   static String generateInviteMessage({
     required String title,

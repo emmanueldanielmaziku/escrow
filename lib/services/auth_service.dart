@@ -114,9 +114,6 @@ class AuthService {
         throw Exception('Failed to create user');
       }
 
-      // Generate a unique wallet number
-      final walletNumber = 'W${DateTime.now().millisecondsSinceEpoch}';
-
       // Create user data
       final userData = UserModel(
         id: userCredential.user!.uid,
@@ -124,10 +121,6 @@ class AuthService {
         phone: phone,
         email: email.toLowerCase(),
         nidaNumber: nidaNumber,
-        walletNumber: walletNumber,
-        balance: 0.0,
-        totalContracts: 0,
-        totalInvitations: 0,
       );
 
       // Save user data to Firestore

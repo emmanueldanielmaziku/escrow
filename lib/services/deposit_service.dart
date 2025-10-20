@@ -9,7 +9,7 @@ class DepositService {
     required String userId,
     required String contractFund,
     required String provider,
-    required String controlNumber,
+    required String channel,
     required String paymentMessage,
   }) async {
     try {
@@ -19,7 +19,7 @@ class DepositService {
         userId: userId,
         provider: provider,
         contractFund: contractFund,
-        controlNumber: controlNumber,
+        channel: channel,
         paymentMessage: paymentMessage,
         createdAt: DateTime.now(),
       );
