@@ -14,10 +14,19 @@ class ContractList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 CONTRACT LIST: Building contract list for user: $userId');
+
     return StreamBuilder<List<ContractModel>>(
       stream: contractService.getAuthenticatedUserContracts(userId),
       builder: (context, snapshot) {
+        print(
+            '🔍 CONTRACT LIST: StreamBuilder snapshot state: ${snapshot.connectionState}');
+        print('🔍 CONTRACT LIST: Has data: ${snapshot.hasData}');
+        print('🔍 CONTRACT LIST: Has error: ${snapshot.hasError}');
+
         if (snapshot.hasError) {
+          print('❌ CONTRACT LIST ERROR: ${snapshot.error}');
+          print('❌ CONTRACT LIST ERROR DETAILS: ${snapshot.error.toString()}');
           return Center(
             child: Text(
               'Error loading contracts: ${snapshot.error}',
@@ -33,8 +42,10 @@ class ContractList extends StatelessWidget {
         }
 
         final contracts = snapshot.data!;
+        print('🔍 CONTRACT LIST: Loaded ${contracts.length} contracts');
 
         if (contracts.isEmpty) {
+          print('🔍 CONTRACT LIST: No contracts found, showing empty state');
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

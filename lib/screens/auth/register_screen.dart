@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../utils/custom_snackbar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,6 +24,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _acceptTerms = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -97,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 80),
+              const SizedBox(height: 32),
               // Logo
               Image.asset(
                 'assets/icons/green.png',
@@ -107,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const Text(
                 'Create Account',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF22C55E),
                 ),
@@ -116,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const Text(
                 'Sign up to get started',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Colors.black54,
                 ),
               ),
@@ -267,7 +272,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _nidaController,
-                      keyboardType: TextInputType.text,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       decoration: InputDecoration(
                         labelText: 'NIDA Number',
                         hintText: 'Enter your NIDA number',
@@ -314,12 +322,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Password',
                         hintText: '********',
                         prefixIcon:
                             const Icon(Icons.lock_outline, color: Colors.grey),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -361,12 +382,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmPasswordController,
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                       decoration: InputDecoration(
                         labelText: 'Confirm Password',
                         hintText: '********',
                         prefixIcon:
                             const Icon(Icons.lock_outline, color: Colors.grey),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -421,11 +456,150 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         Expanded(
-                          child: Text(
-                            'I agree to the Terms and Conditions and Privacy Policy',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
+                          child: RichText(
+                            text: TextSpan(
+                              text: 'I agree to the ',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Terms and Conditions',
+                                  style: const TextStyle(
+                                    color: Color(0xFF22C55E),
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () async {
+                                      try {
+                                        print(
+                                            '🔗 REGISTRATION: Attempting to open Terms and Conditions');
+                                        final Uri url = Uri.parse(
+                                            'https://escrowlabz.vercel.app/terms');
+                                        print(
+                                            '🔗 REGISTRATION: Parsed URL: $url');
+
+                                        final canLaunch =
+                                            await canLaunchUrl(url);
+                                        print(
+                                            '🔗 REGISTRATION: Can launch URL: $canLaunch');
+
+                                        if (canLaunch) {
+                                          print(
+                                              '🔗 REGISTRATION: Launching URL in external application');
+                                          await launchUrl(url,
+                                              mode: LaunchMode
+                                                  .externalApplication);
+                                          print(
+                                              '🔗 REGISTRATION: URL launched successfully');
+                                        } else {
+                                          print(
+                                              '❌ REGISTRATION: Cannot launch URL, trying platform default');
+                                          // Try platform default mode
+                                          try {
+                                            await launchUrl(url,
+                                                mode:
+                                                    LaunchMode.platformDefault);
+                                            print(
+                                                '🔗 REGISTRATION: URL launched with platform default');
+                                          } catch (e) {
+                                            print(
+                                                '❌ REGISTRATION: Platform default also failed: $e');
+                                            if (mounted) {
+                                              CustomSnackBar.show(
+                                                context: context,
+                                                message:
+                                                    'Unable to open Terms and Conditions. Please check your internet connection.',
+                                                type: SnackBarType.error,
+                                              );
+                                            }
+                                          }
+                                        }
+                                      } catch (e) {
+                                        print(
+                                            '❌ REGISTRATION: Error opening Terms: $e');
+                                        if (mounted) {
+                                          CustomSnackBar.show(
+                                            context: context,
+                                            message:
+                                                'Error opening Terms and Conditions: $e',
+                                            type: SnackBarType.error,
+                                          );
+                                        }
+                                      }
+                                    },
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: const TextStyle(
+                                    color: Color(0xFF22C55E),
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () async {
+                                      try {
+                                        print(
+                                            '🔗 REGISTRATION: Attempting to open Privacy Policy');
+                                        final Uri url = Uri.parse(
+                                            'https://escrowlabz.vercel.app/privacy-policy');
+                                        print(
+                                            '🔗 REGISTRATION: Parsed URL: $url');
+
+                                        final canLaunch =
+                                            await canLaunchUrl(url);
+                                        print(
+                                            '🔗 REGISTRATION: Can launch URL: $canLaunch');
+
+                                        if (canLaunch) {
+                                          print(
+                                              '🔗 REGISTRATION: Launching URL in external application');
+                                          await launchUrl(url,
+                                              mode: LaunchMode
+                                                  .externalApplication);
+                                          print(
+                                              '🔗 REGISTRATION: URL launched successfully');
+                                        } else {
+                                          print(
+                                              '❌ REGISTRATION: Cannot launch URL, trying platform default');
+                                          // Try platform default mode
+                                          try {
+                                            await launchUrl(url,
+                                                mode:
+                                                    LaunchMode.platformDefault);
+                                            print(
+                                                '🔗 REGISTRATION: URL launched with platform default');
+                                          } catch (e) {
+                                            print(
+                                                '❌ REGISTRATION: Platform default also failed: $e');
+                                            if (mounted) {
+                                              CustomSnackBar.show(
+                                                context: context,
+                                                message:
+                                                    'Unable to open Privacy Policy. Please check your internet connection.',
+                                                type: SnackBarType.error,
+                                              );
+                                            }
+                                          }
+                                        }
+                                      } catch (e) {
+                                        print(
+                                            '❌ REGISTRATION: Error opening Privacy Policy: $e');
+                                        if (mounted) {
+                                          CustomSnackBar.show(
+                                            context: context,
+                                            message:
+                                                'Error opening Privacy Policy: $e',
+                                            type: SnackBarType.error,
+                                          );
+                                        }
+                                      }
+                                    },
+                                ),
+                              ],
                             ),
                           ),
                         ),

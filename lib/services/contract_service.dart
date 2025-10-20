@@ -138,6 +138,10 @@ class ContractService {
 
   // Get authenticated user's contracts
   Stream<List<ContractModel>> getAuthenticatedUserContracts(String userId) {
+    print('🔍 CONTRACT SERVICE: Getting contracts for user: $userId');
+    print(
+        '🔍 CONTRACT SERVICE: Query: contracts where (remitterId == $userId OR beneficiaryId == $userId) orderBy createdAt desc');
+
     return _firestore
         .collection('contracts')
         .where(Filter.or(
@@ -146,7 +150,13 @@ class ContractService {
         ))
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
+        .handleError((error) {
+      print('❌ CONTRACT SERVICE STREAM ERROR: $error');
+      print('❌ CONTRACT SERVICE ERROR TYPE: ${error.runtimeType}');
+      print('❌ CONTRACT SERVICE ERROR DETAILS: ${error.toString()}');
+    }).map((snapshot) {
+      print(
+          '🔍 CONTRACT SERVICE: Snapshot received with ${snapshot.docs.length} documents');
       return snapshot.docs
           .map((doc) => ContractModel.fromMap(doc.data()))
           .toList();
@@ -156,6 +166,11 @@ class ContractService {
   // Get authenticated user's contracts by status
   Stream<List<ContractModel>> getAuthenticatedUserContractsByStatus(
       String userId, String status) {
+    print(
+        '🔍 CONTRACT SERVICE: Getting contracts for user: $userId with status: $status');
+    print(
+        '🔍 CONTRACT SERVICE: Query: contracts where (remitterId == $userId OR beneficiaryId == $userId) AND status == $status orderBy createdAt desc');
+
     return _firestore
         .collection('contracts')
         .where(Filter.or(
@@ -165,7 +180,13 @@ class ContractService {
         .where('status', isEqualTo: status)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
+        .handleError((error) {
+      print('❌ CONTRACT SERVICE STATUS STREAM ERROR: $error');
+      print('❌ CONTRACT SERVICE STATUS ERROR TYPE: ${error.runtimeType}');
+      print('❌ CONTRACT SERVICE STATUS ERROR DETAILS: ${error.toString()}');
+    }).map((snapshot) {
+      print(
+          '🔍 CONTRACT SERVICE: Status snapshot received with ${snapshot.docs.length} documents');
       return snapshot.docs
           .map((doc) => ContractModel.fromMap(doc.data()))
           .toList();
