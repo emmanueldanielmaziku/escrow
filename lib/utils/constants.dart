@@ -1,6 +1,6 @@
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://a315eb85bf17.ngrok-free.app';
+  static const String baseUrl = 'https://d39835f41ad2.ngrok-free.app';
 
   // Collections
   static const String usersCollection = 'users';

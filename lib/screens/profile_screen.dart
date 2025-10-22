@@ -358,6 +358,28 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSection(
                     context,
+                    'Account Settings',
+                    [
+                      _buildProfileItem(
+                        context,
+                        'Delete Account',
+                        'Permanently delete your account',
+                        Iconsax.trash,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const DeleteAccountWebView(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSection(
+                    context,
                     'Support',
                     [
                       _buildProfileItem(
@@ -400,94 +422,61 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            try {
-                              final authService = Provider.of<AuthService>(
-                                context,
-                                listen: false,
-                              );
-                              final userProvider = Provider.of<UserProvider>(
-                                context,
-                                listen: false,
-                              );
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final authService = Provider.of<AuthService>(
+                            context,
+                            listen: false,
+                          );
+                          final userProvider = Provider.of<UserProvider>(
+                            context,
+                            listen: false,
+                          );
 
-                              // Clear user data from provider
-                              userProvider.clearUser();
+                          // Clear user data from provider
+                          userProvider.clearUser();
 
-                              // Sign out from auth service
-                              await authService.signOut();
+                          // Sign out from auth service
+                          await authService.signOut();
 
-                              if (context.mounted) {
-                                // Navigate to login screen
-                                Navigator.of(context).pushNamedAndRemoveUntil(
-                                  '/',
-                                  (route) => false,
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error signing out: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(
-                            Iconsax.logout,
-                            color: Colors.white,
-                          ),
-                          label: const Text(
-                            'Sign Out',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const DeleteAccountWebView(),
+                          if (context.mounted) {
+                            // Navigate to login screen
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/',
+                              (route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error signing out: $e'),
+                                backgroundColor: Colors.red,
                               ),
                             );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: Colors.grey),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(
-                            Iconsax.trash,
-                            color: Colors.black,
-                          ),
-                          label: const Text(
-                            'Delete Account',
-                            style: TextStyle(color: Colors.black),
-                          ),
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                    ],
+                      icon: const Icon(
+                        Iconsax.logout,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Sign Out',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
                 ],
               ),

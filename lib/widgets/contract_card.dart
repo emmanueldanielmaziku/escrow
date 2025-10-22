@@ -57,9 +57,7 @@ class _ContractCardState extends State<ContractCard> {
   }
 
   void _onTerminationReasonChanged() {
-    setState(() {
-     
-    });
+    setState(() {});
   }
 
   @override
@@ -108,7 +106,6 @@ class _ContractCardState extends State<ContractCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-             
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -388,8 +385,10 @@ class _ContractCardState extends State<ContractCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                label: const Text('Delete Contract', style: TextStyle(color: Colors.red)),
+                icon: const Icon(Icons.delete_outline,
+                    size: 18, color: Colors.red),
+                label: const Text('Delete Contract',
+                    style: TextStyle(color: Colors.red)),
               ),
             ),
           ],
@@ -443,7 +442,8 @@ class _ContractCardState extends State<ContractCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.white),
+            icon: const Icon(Icons.account_balance_wallet_outlined,
+                size: 18, color: Colors.white),
             label: const Text('Fund Contract'),
           ),
         );
@@ -460,7 +460,8 @@ class _ContractCardState extends State<ContractCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.white),
+            icon: const Icon(Icons.account_balance_wallet_outlined,
+                size: 18, color: Colors.white),
             label: const Text('Fund Contract'),
           ),
         );
@@ -652,7 +653,7 @@ class _ContractCardState extends State<ContractCard> {
                   size: 18,
                   color: Colors.white,
                 ),
-                label: const Text('Confirm Withdrawal'),
+                label: const Text('Confirm'),
               ),
             ),
             const SizedBox(width: 12),
@@ -724,7 +725,7 @@ class _ContractCardState extends State<ContractCard> {
                 border: Border.all(color: Colors.green.withOpacity(0.3)),
               ),
               child: const Text(
-                'Contract closed successfully. Funds will be transferred to your account in 30 minutes.',
+                'Contract closed successfully. Funds will be transferred to your account.',
                 style: TextStyle(color: Colors.green),
               ),
             ),
@@ -932,7 +933,7 @@ class _ContractCardState extends State<ContractCard> {
     return const SizedBox.shrink();
   }
 
-void _openWhatsApp() async {
+  void _openWhatsApp() async {
     const phoneNumber = '+255620719589';
     const message = 'Hello, I need assistance with a contract termination.';
     final encodedMessage = Uri.encodeComponent(message);
@@ -950,5 +951,4 @@ void _openWhatsApp() async {
       }
     }
   }
-
 }
