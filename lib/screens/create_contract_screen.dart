@@ -114,19 +114,47 @@ class _CreateContractScreenState extends State<CreateContractScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
-          'Create New Contract',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          'Create Contract',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: Colors.grey[800],
+            letterSpacing: -0.5,
+          ),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        foregroundColor: Colors.grey[800],
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.grey[700],
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.grey[300]!,
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -139,95 +167,144 @@ class _CreateContractScreenState extends State<CreateContractScreen>
               children: [
                 // Role Selection
                 Text(
-                  'Select your role',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                  'Choose Your Role',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E7D32),
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(width: 0.5, color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.05),
-                        spreadRadius: 1,
-                        blurRadius: 10,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+                Text(
+                  'Select whether you are funding the contract or receiving payment',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildRoleOption(
-                          'Remitter',
-                          Iconsax.user,
-                          _selectedRole == 'Remitter',
-                          () {
-                            setState(() {
-                              _selectedRole = 'Remitter';
-                              _selectedSecondParticipant = null;
-                              _secondParticipantController.clear();
-                            });
-                          },
-                        ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildRoleOption(
+                        'Remitter',
+                        'I will fund this contract',
+                        Iconsax.wallet_money,
+                        _selectedRole == 'Remitter',
+                        () {
+                          setState(() {
+                            _selectedRole = 'Remitter';
+                            _selectedSecondParticipant = null;
+                            _secondParticipantController.clear();
+                          });
+                        },
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildRoleOption(
-                          'Beneficiary',
-                          Iconsax.user_tick,
-                          _selectedRole == 'Beneficiary',
-                          () {
-                            setState(() {
-                              _selectedRole = 'Beneficiary';
-                              _selectedSecondParticipant = null;
-                              _secondParticipantController.clear();
-                            });
-                          },
-                        ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildRoleOption(
+                        'Beneficiary',
+                        'I will receive payment',
+                        Iconsax.user_tick,
+                        _selectedRole == 'Beneficiary',
+                        () {
+                          setState(() {
+                            _selectedRole = 'Beneficiary';
+                            _selectedSecondParticipant = null;
+                            _secondParticipantController.clear();
+                          });
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
+
                 // Second Participant Search
-                Text(
-                  '${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}\'s Phone Number',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.grey[200]!,
+                      width: 1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                CustomTextField(
-                  controller: _secondParticipantController,
-                  label: 'Phone Number',
-                  hint: 'Enter phone number',
-                  prefixIcon: const Icon(Iconsax.user, color: Colors.grey),
-                  textInputAction: TextInputAction.next,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Iconsax.user_search,
+                              color: Colors.blue[600],
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Find ${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.grey[800],
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Search by phone number to find the other party',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
+                        controller: _secondParticipantController,
+                        label: 'Phone Number',
+                        hint: 'Enter phone number',
+                        prefixIcon:
+                            const Icon(Iconsax.call, color: Colors.grey),
+                        textInputAction: TextInputAction.next,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSecondParticipant = null;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a phone number';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedSecondParticipant = null;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a phone number';
-                    }
-                    return null;
-                  },
                 ),
                 StreamBuilder<List<UserModel>>(
                   stream: _userService
@@ -240,18 +317,11 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                     }
 
                     return Container(
-                      margin: const EdgeInsets.only(top: 8),
+                      margin: const EdgeInsets.only(top: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 10,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
+                        border: Border.all(color: Colors.grey[200]!, width: 1),
                       ),
                       child: ListView.builder(
                         shrinkWrap: true,
@@ -259,33 +329,70 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                         itemCount: snapshot.data!.length,
                         itemBuilder: (context, index) {
                           final user = snapshot.data![index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  const Color(0xFF22C55E).withOpacity(0.1),
-                              child: Text(
-                                user.fullName[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: Color(0xFF22C55E),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              user.fullName,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            subtitle: Text(
-                              user.phone,
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
+                          return InkWell(
                             onTap: () {
                               setState(() {
                                 _selectedSecondParticipant = user;
                                 _secondParticipantController.text = user.phone;
                               });
                             },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        user.fullName[0].toUpperCase(),
+                                        style: TextStyle(
+                                          color: Colors.blue[700],
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          user.fullName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          user.phone,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Iconsax.arrow_right_3,
+                                    color: Colors.grey[400],
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -293,34 +400,33 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                   },
                 ),
                 if (_selectedSecondParticipant != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 10,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
+                      border:
+                          Border.all(color: const Color(0xFF2E7D32), width: 2),
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          backgroundColor:
-                              const Color(0xFF22C55E).withOpacity(0.5),
-                          radius: 24,
-                          child: Text(
-                            _selectedSecondParticipant!.fullName[0]
-                                .toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF22C55E),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2E7D32).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _selectedSecondParticipant!.fullName[0]
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                color: Color(0xFF2E7D32),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -330,150 +436,310 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _selectedSecondParticipant!.fullName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
+                                'Selected ${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _selectedSecondParticipant!.fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
                               Text(
                                 _selectedSecondParticipant!.phone,
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 14,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.grey),
-                          onPressed: () {
-                            setState(() {
-                              _selectedSecondParticipant = null;
-                              _secondParticipantController.clear();
-                            });
-                          },
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.red, size: 20),
+                            onPressed: () {
+                              setState(() {
+                                _selectedSecondParticipant = null;
+                                _secondParticipantController.clear();
+                              });
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 24),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Contract Details',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
-                      controller: _titleController,
-                      label: 'Contract Title',
-                      hint: 'Enter contract title',
-                      prefixIcon:
-                          const Icon(Icons.title_outlined, color: Colors.grey),
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _descriptionController,
-                      label: 'Contract Conditions',
-                      hint: '• Enter contract conditions',
-                      prefixIcon: const Icon(
-                        Icons.description_outlined,
-                        color: Colors.grey,
-                      ),
-                      maxLines: 5,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      onChanged: (value) {
-                        final lines = value.split('\n');
-                        final bulletLines = lines.map((line) {
-                          if (line.trim().isEmpty) return '';
-                          if (line.startsWith('• ')) return line;
-                          return '• $line';
-                        }).join('\n');
+                const SizedBox(height: 32),
 
-                        if (value != bulletLines) {
-                          _descriptionController.value = TextEditingValue(
-                            text: bulletLines,
-                            selection: TextSelection.collapsed(
-                              offset: bulletLines.length,
+                // Contract Details Section
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.grey[200]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          );
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _rewardController,
-                      label: 'Amount to be secured',
-                      hint: 'Enter amount',
-                      prefixIcon: const Icon(Icons.attach_money_outlined,
-                          color: Colors.grey),
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter an amount';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid amount';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+                            child: Icon(
+                              Iconsax.document_text,
+                              color: Colors.purple[600],
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Contract Details',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.grey[800],
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Define the terms and conditions of your agreement',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      CustomTextField(
+                        controller: _titleController,
+                        label: 'Contract Title',
+                        hint: 'Enter a descriptive title for your contract',
+                        prefixIcon:
+                            const Icon(Iconsax.text, color: Colors.grey),
+                        textInputAction: TextInputAction.next,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a title';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
+                        controller: _descriptionController,
+                        label: 'Contract Conditions',
+                        hint:
+                            '• Enter contract conditions\n• Be specific about requirements\n• Include deadlines if any',
+                        prefixIcon: const Icon(
+                          Iconsax.document_text,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        onChanged: (value) {
+                          final lines = value.split('\n');
+                          final bulletLines = lines.map((line) {
+                            if (line.trim().isEmpty) return '';
+                            if (line.startsWith('• ')) return line;
+                            return '• $line';
+                          }).join('\n');
+
+                          if (value != bulletLines) {
+                            _descriptionController.value = TextEditingValue(
+                              text: bulletLines,
+                              selection: TextSelection.collapsed(
+                                offset: bulletLines.length,
+                              ),
+                            );
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter contract conditions';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      CustomTextField(
+                        controller: _rewardController,
+                        label: 'Amount to be Secured',
+                        hint: 'Enter the amount in TZS',
+                        prefixIcon:
+                            const Icon(Iconsax.money_send, color: Colors.grey),
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter an amount';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid amount';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 32),
-                SizedBox(
+
+                // Submit Button
+                Container(
                   width: double.infinity,
-                  height: 56,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF2E7D32),
+                        const Color(0xFF16A34A),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF2E7D32).withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _createContract,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22C55E),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Creating Contract...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ],
                           )
-                        : const Text(
-                            'Create Contract',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Iconsax.document_text,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Create Contract',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ],
                           ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Footer Note
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Iconsax.info_circle,
+                        color: Colors.blue[600],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Your contract will be created securely and both parties will be notified.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -486,39 +752,62 @@ class _CreateContractScreenState extends State<CreateContractScreen>
 
   Widget _buildRoleOption(
     String role,
+    String description,
     IconData icon,
     bool isSelected,
     VoidCallback onTap,
   ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF22C55E).withOpacity(0.15)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Colors.white : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            width: 0.5,
-            color: isSelected ? const Color(0xFF22C55E) : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+            color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[200]!,
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFF22C55E) : Colors.grey,
-              size: 24,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF2E7D32).withOpacity(0.1)
+                    : Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[600],
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
               role,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF22C55E) : Colors.grey,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[800],
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected
+                    ? const Color(0xFF2E7D32).withOpacity(0.8)
+                    : Colors.grey[600],
+                fontWeight: FontWeight.w400,
+                height: 1.3,
               ),
             ),
           ],

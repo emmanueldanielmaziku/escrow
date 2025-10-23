@@ -355,7 +355,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
                       const Text(
                         'Select Payment Method',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2E7D32),
                         ),
