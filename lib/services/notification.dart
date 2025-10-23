@@ -45,7 +45,7 @@ Future<void> sendFCMV1Notification({
       ['https://www.googleapis.com/auth/firebase.messaging'],
     );
 
-    final projectId = 'escrow-app-7702f';
+    final projectId = 'mai-escrow';
 
     final url = Uri.parse(
       'https://fcm.googleapis.com/v1/projects/$projectId/messages:send',
