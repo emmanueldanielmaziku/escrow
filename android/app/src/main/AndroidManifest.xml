@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+<!-- Firebase Cloud Messaging permissions -->
+<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+<uses-permission android:name="android.permission.WAKE_LOCK"/>
 <!-- For Android 6.0 and below -->
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 <!-- For Android 8.0+ -->
@@ -38,6 +41,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
+        <!-- Firebase Cloud Messaging Service -->
+        <service
+            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
