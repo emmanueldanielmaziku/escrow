@@ -59,6 +59,10 @@ class ContractModel {
         return Colors.red;
       case 'closed':
         return Colors.grey;
+      case 'pendingpayout':
+        return Colors.orange;
+      case 'payedout':
+        return Colors.green;
       default:
         return Colors.grey;
     }
@@ -82,6 +86,10 @@ class ContractModel {
         return 'Terminated';
       case 'closed':
         return 'Closed';
+      case 'pendingpayout':
+        return 'Processing Transfer';
+      case 'payedout':
+        return 'Payed Out';
       default:
         return status;
     }

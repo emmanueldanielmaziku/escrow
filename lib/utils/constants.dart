@@ -1,6 +1,6 @@
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://maipay-dmrtw.ondigitalocean.app';
+  static const String baseUrl = 'https://03861fe8590a.ngrok-free.app';
 
   // Collections
   static const String usersCollection = 'users';
