@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.escrow.refresh</string>
+		<string>com.escrow.cleanup</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -34,22 +39,12 @@
 	<string>This app needs to send you notifications about contract updates and important events.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-
-	<!-- Background Modes -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 		<string>processing</string>
 		<string>fetch</string>
 	</array>
-
-	<!-- Required for 'processing' -->
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.escrow.refresh</string>
-		<string>com.escrow.cleanup</string>
-	</array>
-
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

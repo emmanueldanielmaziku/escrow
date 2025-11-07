@@ -86,6 +86,10 @@ Future<void> sendFCMV1Notification({
 
     if (kDebugMode) {
       print('📨 V1 FCM response: ${response.statusCode} ${response.body}');
+      print('✅ Notification sent successfully!');
+      print('   Title: $title');
+      print('   Body: $body');
+      print('   Token: ${fcmToken.substring(0, 20)}...');
     }
 
     // Handle specific error cases

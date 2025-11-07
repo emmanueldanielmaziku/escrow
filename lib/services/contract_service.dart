@@ -53,11 +53,26 @@ class ContractService {
 
       final receiverToken = receiverDoc['deviceToken'];
 
-      await sendFCMV1Notification(
-        fcmToken: receiverToken,
-        title: userFullName,
-        body: 'New contract invitation: "${contractData.title}"',
-      );
+      if (kDebugMode) {
+        print(
+            '🔍 Sending notification to: ${receiverDoc['fullName'] ?? 'Unknown'}');
+        print('   Token exists: ${receiverToken != null}');
+      }
+
+      if (receiverToken != null &&
+          receiverToken != 'null' &&
+          receiverToken.isNotEmpty) {
+        await sendFCMV1Notification(
+          fcmToken: receiverToken,
+          title: userFullName,
+          body: 'New contract invitation: "${contractData.title}"',
+        );
+      } else {
+        if (kDebugMode) {
+          print(
+              '⚠️ Cannot send notification - no valid device token found for user');
+        }
+      }
 
       return contractData;
     } catch (e) {
