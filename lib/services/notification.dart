@@ -36,19 +36,48 @@ Future<void> sendFCMV1Notification({
     // Load the service account key from assets
     final String serviceAccountJson =
         await rootBundle.loadString('assets/env/service-account-key.json');
-    final serviceAccount = ServiceAccountCredentials.fromJson(
-      json.decode(serviceAccountJson),
-    );
+    
+    final serviceAccountData = json.decode(serviceAccountJson) as Map<String, dynamic>;
+    
+    // Validate required fields
+    final requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
+    final missingFields = <String>[];
+    for (final field in requiredFields) {
+      if (!serviceAccountData.containsKey(field) || serviceAccountData[field] == null) {
+        missingFields.add(field);
+      }
+    }
+    
+    if (missingFields.isNotEmpty) {
+      if (kDebugMode) {
+        print('❌ Service account key is missing required fields: ${missingFields.join(", ")}');
+      }
+      return;
+    }
+    
+    // Verify project ID matches
+    final keyProjectId = serviceAccountData['project_id'] as String;
+    final projectId = 'mai-escrow';
+    if (keyProjectId != projectId) {
+      if (kDebugMode) {
+        print('❌ Service account key project ID ($keyProjectId) does not match expected project ID ($projectId)');
+      }
+      return;
+    }
+    
+    if (kDebugMode) {
+      print('✅ Service account key validated. Project: $keyProjectId, Email: ${serviceAccountData['client_email']}');
+    }
+    
+    final serviceAccount = ServiceAccountCredentials.fromJson(serviceAccountData);
 
     final client = await clientViaServiceAccount(
       serviceAccount,
       ['https://www.googleapis.com/auth/firebase.messaging'],
     );
 
-    final projectId = 'mai-escrow';
-
     final url = Uri.parse(
-      'https://fcm.googleapis.com/v1/projects/$projectId/messages:send',
+      'https://fcm.googleapis.com/v1/projects/$keyProjectId/messages:send',
     );
 
     final message = {

@@ -51,26 +51,33 @@ class ContractService {
           .doc(secondParticipantId)
           .get();
 
-      final receiverToken = receiverDoc['deviceToken'];
+      if (receiverDoc.exists) {
+        final receiverData = receiverDoc.data();
+        final receiverToken = receiverData?['deviceToken'];
+        final receiverName = receiverData?['fullName'] ?? 'Unknown';
+        
+        if (kDebugMode) {
+          print('🔍 Sending notification to: $receiverName');
+          print('   Token exists: ${receiverToken != null}');
+        }
 
-      if (kDebugMode) {
-        print(
-            '🔍 Sending notification to: ${receiverDoc['fullName'] ?? 'Unknown'}');
-        print('   Token exists: ${receiverToken != null}');
-      }
-
-      if (receiverToken != null &&
-          receiverToken != 'null' &&
-          receiverToken.isNotEmpty) {
-        await sendFCMV1Notification(
-          fcmToken: receiverToken,
-          title: userFullName,
-          body: 'New contract invitation: "${contractData.title}"',
-        );
+        if (receiverToken != null &&
+            receiverToken != 'null' &&
+            receiverToken.toString().isNotEmpty) {
+          await sendFCMV1Notification(
+            fcmToken: receiverToken.toString(),
+            title: userFullName,
+            body: 'New contract invitation: "${contractData.title}"',
+          );
+        } else {
+          if (kDebugMode) {
+            print(
+                '⚠️ Cannot send notification - no valid device token found for user');
+          }
+        }
       } else {
         if (kDebugMode) {
-          print(
-              '⚠️ Cannot send notification - no valid device token found for user');
+          print('⚠️ Receiver user document does not exist');
         }
       }
 
