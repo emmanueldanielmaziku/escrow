@@ -283,11 +283,9 @@ class ContractService {
 
       switch (newStatus) {
         case 'active':
-          receiverId = contract.beneficiaryId;
-          notificationTitle = senderName;
-          notificationBody =
-              '$senderName has funded your contract "${contract.title}" and it is now active.';
-          break;
+          // Notify both parties when contract becomes active
+          await _notifyContractActivated(contract, senderName);
+          return; // Return early since we handle notifications separately
         case 'withdraw':
           receiverId = contract.remitterId;
           notificationTitle = senderName;
@@ -417,5 +415,106 @@ class ContractService {
       {String? currentUserName}) async {
     await updateContractStatus(contractId, 'closed',
         currentUserName: currentUserName);
+  }
+
+  // Notify both parties when contract becomes active
+  Future<void> notifyContractActivated(String contractId) async {
+    try {
+      final contractDoc =
+          await _firestore.collection('contracts').doc(contractId).get();
+      if (!contractDoc.exists) {
+        if (kDebugMode) {
+          print('⚠️ Contract not found for notification: $contractId');
+        }
+        return;
+      }
+
+      final contract = ContractModel.fromMap(contractDoc.data()!);
+      await _notifyContractActivated(contract, 'System');
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error notifying contract activation: $e');
+      }
+    }
+  }
+
+  // Internal helper to send notifications to both parties
+  Future<void> _notifyContractActivated(
+      ContractModel contract, String senderName) async {
+    final List<String> userIds = [];
+    final List<String> userNames = [];
+
+    // Add remitter
+    if (contract.remitterId != null) {
+      userIds.add(contract.remitterId!);
+      userNames.add(contract.remitterName ?? 'Remitter');
+    }
+
+    // Add beneficiary
+    if (contract.beneficiaryId != null) {
+      userIds.add(contract.beneficiaryId!);
+      userNames.add(contract.beneficiaryName ?? 'Beneficiary');
+    }
+
+    if (kDebugMode) {
+      print(
+          '📨 Sending activation notifications to ${userIds.length} parties for contract: ${contract.title}');
+    }
+
+    // Send notifications to both parties
+    for (int i = 0; i < userIds.length; i++) {
+      final userId = userIds[i];
+      final userName = userNames[i];
+
+      try {
+        final userDoc =
+            await _firestore.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final deviceToken = userData?['deviceToken'];
+
+          if (deviceToken != null &&
+              deviceToken != 'null' &&
+              deviceToken.toString().isNotEmpty) {
+            // Determine notification message based on role
+            String notificationBody;
+            if (contract.remitterId == userId) {
+              // Remitter notification
+              notificationBody =
+                  'Your contract "${contract.title}" has been successfully funded and is now active.';
+            } else {
+              // Beneficiary notification
+              notificationBody =
+                  'Contract "${contract.title}" has been funded and is now active. You can now start working on it.';
+            }
+
+            await sendFCMV1Notification(
+              fcmToken: deviceToken.toString(),
+              title: 'Contract Activated',
+              body: notificationBody,
+              notificationType: NotificationType.contractUpdates,
+            );
+
+            if (kDebugMode) {
+              print('✅ Notification sent to $userName (${userId.substring(0, 8)}...)');
+            }
+          } else {
+            if (kDebugMode) {
+              print(
+                  '⚠️ No device token found for user: $userName (${userId.substring(0, 8)}...)');
+            }
+          }
+        } else {
+          if (kDebugMode) {
+            print('⚠️ User document not found: ${userId.substring(0, 8)}...');
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print(
+              '❌ Error sending notification to $userName: $e');
+        }
+      }
+    }
   }
 }

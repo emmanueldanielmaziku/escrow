@@ -14,6 +14,7 @@ import '../models/contract_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
+import 'contract_summary_bottom_sheet.dart';
 
 class ContractCard extends StatefulWidget {
   final ContractModel contract;
@@ -74,6 +75,34 @@ class _ContractCardState extends State<ContractCard> {
 
   void _onTerminationReasonChanged() {
     setState(() {});
+  }
+
+  // Show receipt bottom sheet
+  void _showReceipt() {
+    ContractSummaryBottomSheet.showReceipt(
+      context: context,
+      contract: widget.contract,
+    );
+  }
+
+  // Build View Receipt button
+  Widget _buildViewReceiptButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _showReceipt,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF2E7D32),
+          side: const BorderSide(color: Color(0xFF2E7D32)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        icon: const Icon(Icons.receipt_long, size: 18),
+        label: const Text('View Receipt'),
+      ),
+    );
   }
 
   @override
@@ -606,47 +635,59 @@ class _ContractCardState extends State<ContractCard> {
             ],
           );
         } else {
-          return SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _showTerminationReasonInput = true;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          return Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showTerminationReasonInput = true;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.cancel_outlined,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text('Terminate Contract'),
                 ),
               ),
-              icon: const Icon(
-                Icons.cancel_outlined,
-                size: 18,
-                color: Colors.white,
-              ),
-              label: const Text('Terminate Contract'),
-            ),
+              const SizedBox(height: 8),
+              _buildViewReceiptButton(),
+            ],
           );
         }
       } else if (isBeneficiary) {
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => widget.onRequestWithdrawal?.call(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        return Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => widget.onRequestWithdrawal?.call(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.money_outlined, size: 18),
+                label: const Text('Request Withdrawal'),
               ),
             ),
-            icon: const Icon(Icons.money_outlined, size: 18),
-            label: const Text('Request Withdrawal'),
-          ),
+            const SizedBox(height: 8),
+            _buildViewReceiptButton(),
+          ],
         );
       }
     } else if (widget.contract.status == 'withdraw') {
@@ -750,6 +791,8 @@ class _ContractCardState extends State<ContractCard> {
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          _buildViewReceiptButton(),
         ],
       );
     } else if (widget.contract.status == 'terminated') {
@@ -981,6 +1024,8 @@ class _ContractCardState extends State<ContractCard> {
               style: TextStyle(color: Colors.orange),
             ),
           ),
+          const SizedBox(height: 8),
+          _buildViewReceiptButton(),
         ],
       );
     } else if (widget.contract.status == 'payedout') {
@@ -1015,6 +1060,8 @@ class _ContractCardState extends State<ContractCard> {
               style: TextStyle(color: Colors.green),
             ),
           ),
+          const SizedBox(height: 8),
+          _buildViewReceiptButton(),
         ],
       );
     }

@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import '../providers/user_provider.dart';
@@ -26,9 +27,11 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   final _rewardController = TextEditingController();
   final _secondParticipantController = TextEditingController();
   bool _isLoading = false;
+  bool _isSearching = false;
   final _contractService = ContractService();
   final _userService = UserService();
   UserModel? _selectedSecondParticipant;
+  List<UserModel> _searchResults = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -53,6 +56,44 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     _secondParticipantController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _performSearch() async {
+    final phoneNumber = _secondParticipantController.text.trim();
+    if (phoneNumber.length != 10) {
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchResults = [];
+    });
+
+    try {
+      // Get the first result from the stream
+      final stream = _userService.searchUsersByPhone(phoneNumber);
+      await for (final users in stream) {
+        if (mounted) {
+          setState(() {
+            _searchResults = users;
+            _isSearching = false;
+          });
+        }
+        break; // Only take the first result
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _searchResults = [];
+        });
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error searching for user: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
   }
 
   Future<void> _createContract() async {
@@ -286,6 +327,10 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                         hint: 'Enter phone number',
                         prefixIcon:
                             const Icon(Iconsax.call, color: Colors.grey),
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         textInputAction: TextInputAction.next,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -294,6 +339,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                         onChanged: (value) {
                           setState(() {
                             _selectedSecondParticipant = null;
+                            _searchResults = [];
                           });
                         },
                         validator: (value) {
@@ -303,102 +349,129 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                           return null;
                         },
                       ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _secondParticipantController.text.length == 10 && !_isSearching
+                              ? _performSearch
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.grey[300],
+                            disabledForegroundColor: Colors.grey[600],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: _isSearching
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Iconsax.search_normal, size: 18),
+                          label: Text(
+                            _isSearching ? 'Searching...' : 'Search',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                StreamBuilder<List<UserModel>>(
-                  stream: _userService
-                      .searchUsersByPhone(_secondParticipantController.text),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData ||
-                        snapshot.data!.isEmpty ||
-                        _selectedSecondParticipant != null) {
-                      return const SizedBox.shrink();
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.only(top: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[200]!, width: 1),
-                      ),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          final user = snapshot.data![index];
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedSecondParticipant = user;
-                                _secondParticipantController.text = user.phone;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        user.fullName[0].toUpperCase(),
-                                        style: TextStyle(
-                                          color: Colors.blue[700],
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 18,
-                                        ),
+                if (_searchResults.isNotEmpty && _selectedSecondParticipant == null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[200]!, width: 1),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final user = _searchResults[index];
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedSecondParticipant = user;
+                              _secondParticipantController.text = user.phone;
+                              _searchResults = [];
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      user.fullName[0].toUpperCase(),
+                                      style: TextStyle(
+                                        color: Colors.blue[700],
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 18,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          user.fullName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 16,
-                                            color: Colors.black87,
-                                          ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        user.fullName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          color: Colors.black87,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          user.phone,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w400,
-                                          ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        user.phone,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                  Icon(
-                                    Iconsax.arrow_right_3,
-                                    color: Colors.grey[400],
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
+                                ),
+                                Icon(
+                                  Iconsax.arrow_right_3,
+                                  color: Colors.grey[400],
+                                  size: 16,
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
                 if (_selectedSecondParticipant != null) ...[
                   const SizedBox(height: 16),
                   Container(

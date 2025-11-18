@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import '../models/contract_model.dart';
@@ -9,6 +10,7 @@ import '../services/deposit_service.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
+import '../widgets/contract_summary_bottom_sheet.dart';
 
 class FundContractScreen extends StatefulWidget {
   final ContractModel contract;
@@ -31,6 +33,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
   bool _showOverlay = false;
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
+  bool _hasNotifiedActivation = false; // Prevent duplicate notifications
 
   final _contractService = ContractService();
 
@@ -78,6 +81,21 @@ class _FundContractScreenState extends State<FundContractScreen> {
       return;
     }
 
+    // Show funding summary bottom sheet
+    await ContractSummaryBottomSheet.showFundingSummary(
+      context: context,
+      contract: widget.contract,
+      onPayNow: () {
+        Navigator.pop(context); // Close bottom sheet
+        _proceedWithPayment();
+      },
+      onCancel: () {
+        Navigator.pop(context); // Close bottom sheet
+      },
+    );
+  }
+
+  Future<void> _proceedWithPayment() async {
     setState(() {
       _isInitiatingPayment = true;
     });
@@ -154,13 +172,53 @@ class _FundContractScreenState extends State<FundContractScreen> {
         final contract =
             await _contractService.getContractDetails(widget.contract.id);
         if (contract?.status == 'active') {
+          // Contract is now active, notify both parties (only once)
+          if (!_hasNotifiedActivation) {
+            _hasNotifiedActivation = true;
+            try {
+              // Send notifications to both remitter and beneficiary
+              await _contractService
+                  .notifyContractActivated(widget.contract.id);
+              if (kDebugMode) {
+                print('✅ Activation notifications sent to both parties');
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                print('⚠️ Error sending activation notifications: $e');
+              }
+            }
+          }
+
           // Contract is now active, show success overlay
           if (mounted) {
             setState(() {
               _isSuccess = true;
             });
+            // Show success message for 2 seconds
             await Future.delayed(const Duration(seconds: 2));
-            Navigator.pop(context);
+
+            // Close overlay first
+            if (mounted) {
+              setState(() {
+                _showOverlay = false;
+              });
+
+              // Wait a bit for overlay to close smoothly
+              await Future.delayed(const Duration(milliseconds: 300));
+
+              // Show receipt bottom sheet
+              if (mounted) {
+                await ContractSummaryBottomSheet.showReceipt(
+                  context: context,
+                  contract: contract!,
+                );
+
+                // Close the fund contract screen after receipt is closed
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              }
+            }
           }
           return;
         }
