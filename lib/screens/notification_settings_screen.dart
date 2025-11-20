@@ -255,7 +255,7 @@ class _NotificationSettingsScreenState
           Switch(
             value: _settings!.notificationsEnabled,
             onChanged: (value) => _updateSetting(notificationsEnabled: value),
-            activeColor: const Color(0xFF22C55E),
+            activeThumbColor: const Color(0xFF22C55E),
           ),
         ],
       ),
@@ -372,7 +372,7 @@ class _NotificationSettingsScreenState
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF22C55E),
+          activeThumbColor: const Color(0xFF22C55E),
         ),
       ],
     );

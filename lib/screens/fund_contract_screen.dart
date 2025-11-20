@@ -10,6 +10,7 @@ import '../services/deposit_service.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
+import '../utils/fee_calculator.dart';
 import '../widgets/contract_summary_bottom_sheet.dart';
 
 class FundContractScreen extends StatefulWidget {
@@ -118,10 +119,13 @@ class _FundContractScreenState extends State<FundContractScreen> {
         }
       }
 
+      // Calculate total amount including fee
+      final totalAmount = FeeCalculator.calculateTotal(widget.contract.reward);
+
       // Initiate payment via API
       await _paymentService.initiatePayment(
         contractId: widget.contract.id,
-        amount: widget.contract.reward,
+        amount: totalAmount,
         initiatorId: user.id, // Remitter's Firebase ID
         beneficiaryId: widget.contract.beneficiaryId ?? '',
         currency: 'TZS',

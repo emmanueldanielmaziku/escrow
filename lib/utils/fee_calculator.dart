@@ -42,7 +42,7 @@ class FeeCalculator {
     int count = 0;
     for (int i = integerPart.length - 1; i >= 0; i--) {
       if (count == 3) {
-        formatted = ',' + formatted;
+        formatted = ',$formatted';
         count = 0;
       }
       formatted = integerPart[i] + formatted;
