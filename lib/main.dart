@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:io';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -200,22 +201,35 @@ class _EscrowEngineState extends State<EscrowEngine> {
     // Handle notifications when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
-
-      if (notification != null && android != null) {
+      
+      if (notification != null) {
+        if (kDebugMode) {
+          print('📨 Received foreground notification: ${notification.title} - ${notification.body}');
+        }
+        
+        // Show notification for both Android and iOS
         flutterLocalNotificationsPlugin.show(
           notification.hashCode,
           notification.title,
           notification.body,
           NotificationDetails(
-            android: AndroidNotificationDetails(
-              'default_channel',
-              'Default Channel',
-              channelDescription: 'Default notification channel',
-              importance: Importance.max,
-              priority: Priority.high,
-              icon: 'notification',
-            ),
+            android: Platform.isAndroid
+                ? AndroidNotificationDetails(
+                    'default_channel',
+                    'Default Channel',
+                    channelDescription: 'Default notification channel',
+                    importance: Importance.max,
+                    priority: Priority.high,
+                    icon: 'notification',
+                  )
+                : null,
+            iOS: Platform.isIOS
+                ? const DarwinNotificationDetails(
+                    presentAlert: true,
+                    presentBadge: true,
+                    presentSound: true,
+                  )
+                : null,
           ),
           payload: message.data['payload'],
         );

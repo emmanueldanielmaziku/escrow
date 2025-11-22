@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -30,7 +31,32 @@ import UIKit
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
   
-  // Handle notification when app is in foreground
+  // Handle notification when app is in foreground (iOS 10+)
+  @available(iOS 10.0, *)
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    // Show notification even when app is in foreground
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .badge, .sound])
+    } else {
+      completionHandler([.alert, .badge, .sound])
+    }
+  }
+  
+  // Handle notification tap
+  @available(iOS 10.0, *)
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    completionHandler()
+  }
+  
+  // Handle notification when app is in background
   override func application(_ application: UIApplication,
                             didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                             fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
