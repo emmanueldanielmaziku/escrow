@@ -58,7 +58,7 @@ flutter:
 
   assets:
     - assets/icons/
-    - assets/env/
+ 
 
   fonts:
     - family: ProductSans

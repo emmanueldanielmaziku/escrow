@@ -135,14 +135,14 @@ class _ContractCardState extends State<ContractCard> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(width: 0.5, color: Colors.grey),
+          border: Border.all(width: 0.5, color: Colors.grey[300]!),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),

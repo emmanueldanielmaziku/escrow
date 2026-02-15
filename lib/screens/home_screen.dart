@@ -14,7 +14,9 @@ import '../screens/fund_contract_screen.dart';
 import '../utils/custom_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onProfileTap;
+
+  const HomeScreen({super.key, this.onProfileTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -274,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Fixed Header Section
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
+            padding: const EdgeInsets.fromLTRB(16, 55, 16, 20),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -295,11 +297,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const ProfileScreen()),
-                            );
+                            if (widget.onProfileTap != null) {
+                              widget.onProfileTap!();
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ProfileScreen()),
+                              );
+                            }
                           },
                           child: Container(
                             width: 42,
@@ -318,14 +325,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Welcome,',
+                              'Mai sahara',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontSize: 16.0,
+                                fontSize: 14.0,
                                 color: Colors.white.withOpacity(0.8),
                               ),
                             ),
                             Text(
-                              userProvider.user?.fullName ?? 'User',
+                              'Contracts',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 color: Colors.white,
                                 fontSize: 20.0,
@@ -374,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       ,
                       icon: const Icon(
-                        Iconsax.add_square,
+                        Iconsax.add_circle,
                         color: Colors.white,
                         size: 28,
                       ),

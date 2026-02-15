@@ -10,6 +10,7 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLines;
+  final int? minLines;
   final int? maxLength;
   final Widget? prefixIcon;
   final Widget? suffix;
@@ -29,6 +30,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.inputFormatters,
     this.maxLines = 1,
+    this.minLines,
     this.maxLength,
     this.prefixIcon,
     this.suffix,
@@ -61,6 +63,7 @@ class CustomTextField extends StatelessWidget {
           validator: validator,
           inputFormatters: inputFormatters,
           maxLines: maxLines,
+          minLines: minLines,
           maxLength: maxLength,
           enabled: enabled,
           focusNode: focusNode,

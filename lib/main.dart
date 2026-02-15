@@ -14,12 +14,12 @@ import 'services/auth_service.dart';
 import 'services/notification_settings_service.dart';
 import 'providers/user_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
-
 
 // Notification plugin instance
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -129,7 +129,6 @@ class _EscrowEngineState extends State<EscrowEngine> {
   void initState() {
     super.initState();
     _initFirebaseMessaging();
-
   }
 
   void _initFirebaseMessaging() async {
@@ -154,13 +153,13 @@ class _EscrowEngineState extends State<EscrowEngine> {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         // Wait for APNS token to be available
         await Future.delayed(const Duration(seconds: 2));
-        
+
         // Check if APNS token is available
         final apnsToken = await messaging.getAPNSToken();
         if (kDebugMode) {
           print('🍎 APNS Token: $apnsToken');
         }
-        
+
         if (apnsToken != null) {
           // Get the FCM token
           final token = await messaging.getToken();
@@ -201,12 +200,13 @@ class _EscrowEngineState extends State<EscrowEngine> {
     // Handle notifications when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       RemoteNotification? notification = message.notification;
-      
+
       if (notification != null) {
         if (kDebugMode) {
-          print('📨 Received foreground notification: ${notification.title} - ${notification.body}');
+          print(
+              '📨 Received foreground notification: ${notification.title} - ${notification.body}');
         }
-        
+
         // Show notification for both Android and iOS
         flutterLocalNotificationsPlugin.show(
           notification.hashCode,
@@ -283,7 +283,7 @@ class _EscrowEngineState extends State<EscrowEngine> {
         initialRoute: '/',
         routes: {
           '/': (context) => const SplashScreen(),
-          '/home': (context) => const HomeScreen(),
+          '/home': (context) => const MainScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),

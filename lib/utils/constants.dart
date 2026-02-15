@@ -1,6 +1,8 @@
+import '../config/app_config.dart';
+
 class AppConstants {
-  // API Configuration
-  static const String baseUrl = 'https://maipay-dmrtw.ondigitalocean.app';
+  // API Configuration - Uses environment-based configuration
+  static String get baseUrl => AppConfig.baseUrl;
 
   // Collections
   static const String usersCollection = 'users';

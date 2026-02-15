@@ -182,58 +182,109 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     Widget userAvatar = RandomAvatar(userProvider.user?.fullName ?? 'User',
         trBackground: true, height: 100, width: 100);
+    Widget smallAvatar = RandomAvatar(userProvider.user?.fullName ?? 'User',
+        trBackground: true, height: 32, width: 32);
+    
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           // Custom App Bar
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 220,
             pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.green, Colors.green],
+            automaticallyImplyLeading: false,
+            backgroundColor: Colors.green,
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCollapsed = constraints.biggest.height <= kToolbarHeight + MediaQuery.of(context).padding.top;
+                return FlexibleSpaceBar(
+                  titlePadding: isCollapsed ? const EdgeInsets.only(left: 16, bottom: 16) : EdgeInsets.zero,
+                  title: isCollapsed
+                      ? Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white, width: 1.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: smallAvatar,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    userProvider.user?.fullName ?? 'User',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    userProvider.user?.phone ?? 'Not set',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.green, Colors.green],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 20),
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white, width: 3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: userAvatar,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            userProvider.user?.fullName ?? 'User',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            userProvider.user?.phone ?? 'Not set',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: userAvatar,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        userProvider.user?.fullName ?? 'User',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        userProvider.user?.phone ?? 'Not set',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Iconsax.arrow_left, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+                );
+              },
             ),
             actions: [
               IconButton.outlined(
