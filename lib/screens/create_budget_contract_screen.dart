@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
@@ -25,8 +26,11 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  final _contractTermController = TextEditingController();
   bool _isLoading = false;
+  // Contract term picker values (for non-negotiable contracts)
+  int _selectedContractDays = 0;
+  int _selectedContractHours = 0;
+  int _selectedContractMinutes = 0;
   final _budgetContractService = BudgetContractService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -44,35 +48,25 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
     _animationController.forward();
   }
 
-
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
     _amountController.dispose();
-    _contractTermController.dispose();
     _animationController.dispose();
     super.dispose();
   }
-
 
   Future<void> _createBudgetContract() async {
     if (_formKey.currentState!.validate()) {
       // Validate contract term for non-negotiable contracts
       if (_selectedContractType == ContractType.nonNegotiable) {
-        if (_contractTermController.text.trim().isEmpty) {
+        if (_selectedContractDays == 0 &&
+            _selectedContractHours == 0 &&
+            _selectedContractMinutes == 0) {
           CustomSnackBar.show(
             context: context,
-            message: 'Please enter contract term duration',
-            type: SnackBarType.error,
-          );
-          return;
-        }
-        final days = int.tryParse(_contractTermController.text.trim());
-        if (days == null || days <= 0) {
-          CustomSnackBar.show(
-            context: context,
-            message: 'Please enter a valid number of days',
+            message: 'Please select contract term duration',
             type: SnackBarType.error,
           );
           return;
@@ -86,10 +80,18 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
       try {
         final user = Provider.of<UserProvider>(context, listen: false).user!;
 
+        // Contract term: Used to calculate when contract can be closed (for non-negotiable)
         Duration? contractTerm;
         if (_selectedContractType == ContractType.nonNegotiable) {
-          final days = int.parse(_contractTermController.text.trim());
-          contractTerm = Duration(days: days);
+          if (_selectedContractDays > 0 ||
+              _selectedContractHours > 0 ||
+              _selectedContractMinutes > 0) {
+            contractTerm = Duration(
+              days: _selectedContractDays,
+              hours: _selectedContractHours,
+              minutes: _selectedContractMinutes,
+            );
+          }
         }
 
         await _budgetContractService.createBudgetContract(
@@ -100,10 +102,6 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
           contractType: _selectedContractType,
           userFullName: user.fullName,
           userPhone: user.phone,
-          secondParticipantId:
-              user.id, // Creator is both remitter and beneficiary
-          secondParticipantName: user.fullName,
-          secondParticipantPhone: user.phone,
           contractTerm: contractTerm,
         );
 
@@ -216,7 +214,10 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                         () {
                           setState(() {
                             _selectedContractType = ContractType.negotiable;
-                            _contractTermController.clear();
+                            // Reset contract term when switching to negotiable
+                            _selectedContractDays = 0;
+                            _selectedContractHours = 0;
+                            _selectedContractMinutes = 0;
                           });
                         },
                       ),
@@ -296,27 +297,79 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                           ],
                         ),
                         const SizedBox(height: 16),
-                        CustomTextField(
-                          controller: _contractTermController,
-                          label: 'Duration (Days)',
-                          hint: 'e.g., 30',
-                          prefixIcon:
-                              const Icon(Iconsax.calendar, color: Colors.grey),
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Contract Term Duration',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: () => _showContractTermPicker(context),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey[300]!,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.timer,
+                                      color: Colors.grey[600],
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _getContractTermDisplayText(),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: (_selectedContractDays > 0 ||
+                                                  _selectedContractHours > 0 ||
+                                                  _selectedContractMinutes > 0)
+                                              ? Colors.grey[800]
+                                              : Colors.grey[500],
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Iconsax.arrow_down_1,
+                                      color: Colors.grey[600],
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (_selectedContractDays == 0 &&
+                                _selectedContractHours == 0 &&
+                                _selectedContractMinutes == 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                  'Select contract duration (when contract can be closed)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ),
                           ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter contract duration';
-                            }
-                            final days = int.tryParse(value);
-                            if (days == null || days <= 0) {
-                              return 'Please enter a valid number of days';
-                            }
-                            return null;
-                          },
                         ),
                       ],
                     ),
@@ -344,12 +397,12 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.1),
+                              color: Colors.blue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               Iconsax.wallet_3,
-                              color: Colors.purple[600],
+                              color: Colors.blue[600],
                               size: 20,
                             ),
                           ),
@@ -424,7 +477,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                         prefixIcon:
                             const Icon(Iconsax.money_send, color: Colors.grey),
                         keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
+                        textInputAction: TextInputAction.next,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
@@ -627,6 +680,178 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  String _getContractTermDisplayText() {
+    if (_selectedContractDays == 0 &&
+        _selectedContractHours == 0 &&
+        _selectedContractMinutes == 0) {
+      return 'Select contract duration';
+    }
+
+    List<String> parts = [];
+    if (_selectedContractDays > 0) {
+      parts.add(
+          '${_selectedContractDays} ${_selectedContractDays == 1 ? 'day' : 'days'}');
+    }
+    if (_selectedContractHours > 0) {
+      parts.add(
+          '${_selectedContractHours} ${_selectedContractHours == 1 ? 'hour' : 'hours'}');
+    }
+    if (_selectedContractMinutes > 0) {
+      parts.add(
+          '${_selectedContractMinutes} ${_selectedContractMinutes == 1 ? 'minute' : 'minutes'}');
+    }
+
+    return parts.join(', ');
+  }
+
+  void _showContractTermPicker(BuildContext context) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 300,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey[300]!,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: CupertinoColors.destructiveRed,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Contract Duration',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          color: CupertinoColors.activeBlue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Pickers
+              Expanded(
+                child: Row(
+                  children: [
+                    // Days Picker
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: _selectedContractDays,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (int value) {
+                          setState(() {
+                            _selectedContractDays = value;
+                          });
+                        },
+                        children: List<Widget>.generate(366, (int index) {
+                          return Center(
+                            child: Text(
+                              '$index ${index == 1 ? 'day' : 'days'}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    // Hours Picker
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: _selectedContractHours,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (int value) {
+                          setState(() {
+                            _selectedContractHours = value;
+                          });
+                        },
+                        children: List<Widget>.generate(24, (int index) {
+                          return Center(
+                            child: Text(
+                              '$index ${index == 1 ? 'hour' : 'hours'}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    // Minutes Picker
+                    Expanded(
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: _selectedContractMinutes,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (int value) {
+                          setState(() {
+                            _selectedContractMinutes = value;
+                          });
+                        },
+                        children: List<Widget>.generate(60, (int index) {
+                          return Center(
+                            child: Text(
+                              '$index ${index == 1 ? 'minute' : 'minutes'}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

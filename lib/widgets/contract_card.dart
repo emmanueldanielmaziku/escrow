@@ -26,6 +26,7 @@ class ContractCard extends StatefulWidget {
   final VoidCallback? onConfirmWithdrawal;
   final VoidCallback? onDeclineWithdrawal;
   final VoidCallback? onApproveTermination;
+  final bool showDescription;
 
   const ContractCard({
     super.key,
@@ -38,6 +39,7 @@ class ContractCard extends StatefulWidget {
     this.onConfirmWithdrawal,
     this.onDeclineWithdrawal,
     this.onApproveTermination,
+    this.showDescription = true,
   });
 
   @override
@@ -150,49 +152,59 @@ class _ContractCardState extends State<ContractCard> {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          ContractModel.getStatusColor(widget.contract.status)
-                              .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            ContractModel.getStatusColor(widget.contract.status)
+                                .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: ContractModel.getStatusColor(
+                                widget.contract.status),
+                            width: 0.5),
+                      ),
+                      child: Text(
+                        ContractModel.getStatusText(widget.contract.status),
+                        style: TextStyle(
                           color: ContractModel.getStatusColor(
                               widget.contract.status),
-                          width: 0.5),
-                    ),
-                    child: Text(
-                      ContractModel.getStatusText(widget.contract.status),
-                      style: TextStyle(
-                        color: ContractModel.getStatusColor(
-                            widget.contract.status),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: theme.colorScheme.primary, width: 0.5),
-                    ),
-                    child: Text(
-                      currencyFormat.format(widget.contract.reward),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: theme.colorScheme.primary, width: 0.5),
+                      ),
+                      child: Text(
+                        currencyFormat.format(widget.contract.reward),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ),
@@ -209,61 +221,63 @@ class _ContractCardState extends State<ContractCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
-
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDescriptionExpanded = !_isDescriptionExpanded;
-                  });
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.contract.description,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.black87,
-                        height: 1.4,
+              if (widget.showDescription) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isDescriptionExpanded = !_isDescriptionExpanded;
+                    });
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.contract.description,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.black87,
+                          height: 1.4,
+                        ),
+                        maxLines: _isDescriptionExpanded ? null : 2,
+                        overflow: _isDescriptionExpanded
+                            ? null
+                            : TextOverflow.ellipsis,
                       ),
-                      maxLines: _isDescriptionExpanded ? null : 2,
-                      overflow:
-                          _isDescriptionExpanded ? null : TextOverflow.ellipsis,
-                    ),
-                    if (!_isDescriptionExpanded &&
-                        widget.contract.description.length > 100)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isDescriptionExpanded = true;
-                          });
-                        },
-                        child: Text(
-                          '...more',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                      if (!_isDescriptionExpanded &&
+                          widget.contract.description.length > 100)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isDescriptionExpanded = true;
+                            });
+                          },
+                          child: Text(
+                            '...more',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                    if (_isDescriptionExpanded)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isDescriptionExpanded = false;
-                          });
-                        },
-                        child: Text(
-                          '...less',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                      if (_isDescriptionExpanded)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isDescriptionExpanded = false;
+                            });
+                          },
+                          child: Text(
+                            '...less',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 8),
               // Created Date
               Text(

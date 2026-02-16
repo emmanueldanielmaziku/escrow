@@ -5,6 +5,7 @@ import 'package:random_avatar/random_avatar.dart';
 import 'dart:async';
 import '../providers/user_provider.dart';
 import '../models/budget_contract_model.dart';
+import '../services/budget_contract_service.dart';
 import 'create_budget_contract_screen.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -16,72 +17,24 @@ class BudgetsScreen extends StatefulWidget {
 
 class _BudgetsScreenState extends State<BudgetsScreen> {
   final ScrollController _scrollController = ScrollController();
+  final BudgetContractService _budgetContractService = BudgetContractService();
   Timer? _timer;
+  Stream<List<BudgetContractModel>>? _budgetStream;
 
   // Filter states
   String _sortOrder = 'latest';
   ContractType? _filterContractType;
   BudgetContractStatus? _filterStatus;
 
-  // Dummy data for budgets
-  List<BudgetContractModel> _allBudgetContracts = [
-    BudgetContractModel(
-      id: '1',
-      title: 'Website Development',
-      description: 'Complete website redesign project',
-      amount: 500000,
-      fundedAmount: 250000,
-      contractType: ContractType.nonNegotiable,
-      status: BudgetContractStatus.active,
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      contractEndDate: DateTime.now().add(const Duration(days: 25)),
-      contractTerm: const Duration(days: 30),
-      remitterName: 'John Doe',
-      beneficiaryName: 'Jane Smith',
-    ),
-    BudgetContractModel(
-      id: '2',
-      title: 'Mobile App Design',
-      description: 'UI/UX design for mobile application',
-      amount: 300000,
-      fundedAmount: 0,
-      contractType: ContractType.negotiable,
-      status: BudgetContractStatus.unfunded,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      remitterName: 'Alice Johnson',
-      beneficiaryName: 'Bob Williams',
-    ),
-    BudgetContractModel(
-      id: '3',
-      title: 'Content Writing',
-      description: 'Blog posts and articles writing',
-      amount: 200000,
-      fundedAmount: 200000,
-      contractType: ContractType.negotiable,
-      status: BudgetContractStatus.active,
-      createdAt: DateTime.now().subtract(const Duration(days: 10)),
-      remitterName: 'Mike Brown',
-      beneficiaryName: 'Sarah Davis',
-    ),
-    BudgetContractModel(
-      id: '4',
-      title: 'Logo Design',
-      description: 'Brand identity and logo design',
-      amount: 150000,
-      fundedAmount: 150000,
-      contractType: ContractType.nonNegotiable,
-      status: BudgetContractStatus.sahara,
-      createdAt: DateTime.now().subtract(const Duration(days: 20)),
-      contractEndDate: DateTime.now().subtract(const Duration(days: 5)),
-      contractTerm: const Duration(days: 15),
-      remitterName: 'David Wilson',
-      beneficiaryName: 'Emma Taylor',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
+    // Initialize stream once (same pattern as Contract module)
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.user?.id ?? '';
+    _budgetStream =
+        _budgetContractService.getAuthenticatedUserBudgetContracts(userId);
+
     // Update timer every second for countdown
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -97,8 +50,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     super.dispose();
   }
 
-  List<BudgetContractModel> get _filteredContracts {
-    var filtered = List<BudgetContractModel>.from(_allBudgetContracts);
+  List<BudgetContractModel> _filterContracts(
+      List<BudgetContractModel> contracts) {
+    var filtered = List<BudgetContractModel>.from(contracts);
 
     // Filter by contract type
     if (_filterContractType != null) {
@@ -242,6 +196,19 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   void _showCloseContractDialog(BudgetContractModel contract) {
+    // Always allow closing unfunded contracts
+    // Prevent closing if budget is 100% funded (except unfunded status)
+    if (contract.status != BudgetContractStatus.unfunded &&
+        contract.isFullyFunded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot close contract when budget is 100% funded'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -279,12 +246,29 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implement close contract functionality
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contract closed successfully')),
-              );
+              try {
+                await _budgetContractService.deleteBudgetContract(contract.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Contract deleted successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Failed to delete contract: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -304,64 +288,393 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     final user = userProvider.user;
 
     final userAvatar = RandomAvatar(
-      user?.id ?? 'default',
+      user?.fullName ?? 'User',
+      trBackground: true,
       height: 42,
       width: 42,
     );
 
+    // Use cached stream initialized in initState (same pattern as Contract module)
+    final budgetStream = _budgetStream ??
+        _budgetContractService
+            .getAuthenticatedUserBudgetContracts(user?.id ?? '');
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: Column(
-        children: [
-          // Fixed Header Section (matching HomeScreen style)
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 55, 16, 20),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.green, Colors.green, Colors.green],
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
+      body: StreamBuilder<List<BudgetContractModel>>(
+        stream: budgetStream,
+        builder: (context, streamSnapshot) {
+          final allContracts = streamSnapshot.data ?? [];
+          final filteredContracts = _filterContracts(allContracts);
+
+          return Column(
+            children: [
+              // Fixed Header Section (matching HomeScreen style)
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 55, 16, 20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.green, Colors.green, Colors.green],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    Expanded(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: Colors.white, width: 1.5),
+                                  color: Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: userAvatar,
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Mai sahara',
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
+                                      fontSize: 14.0,
+                                      color: Colors.white.withOpacity(0.8),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Budgeting feature',
+                                    style:
+                                        theme.textTheme.headlineSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 20.0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const CreateBudgetContractScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Iconsax.add_circle,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    // Filter Card (matching HomeScreen style)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: Row(
                         children: [
                           Container(
-                            width: 42,
-                            height: 42,
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              border:
-                                  Border.all(color: Colors.white, width: 1.5),
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color.fromARGB(198, 100, 202, 103),
+                                width: 0.5,
+                              ),
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: userAvatar,
+                            child: const Icon(
+                              Iconsax.wallet_3,
+                              color: Colors.green,
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Mai sahara',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontSize: 14.0,
-                                  color: Colors.white.withOpacity(0.8),
+                          Text(
+                            filteredContracts.length.toString(),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Budget Contracts',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.black87.withOpacity(0.7),
+                            ),
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            icon: const Icon(
+                              Iconsax.setting_3,
+                              color: Colors.green,
+                              size: 22,
+                            ),
+                            onSelected: (String value) {
+                              setState(() {
+                                if (value == 'latest' || value == 'oldest') {
+                                  _sortOrder = value;
+                                } else if (value == 'all_types') {
+                                  _filterContractType = null;
+                                } else if (value == 'negotiable') {
+                                  _filterContractType = ContractType.negotiable;
+                                } else if (value == 'non_negotiable') {
+                                  _filterContractType =
+                                      ContractType.nonNegotiable;
+                                } else if (value == 'all_status') {
+                                  _filterStatus = null;
+                                } else if (value == 'active') {
+                                  _filterStatus = BudgetContractStatus.active;
+                                } else if (value == 'sahara') {
+                                  _filterStatus = BudgetContractStatus.sahara;
+                                } else if (value == 'unfunded') {
+                                  _filterStatus = BudgetContractStatus.unfunded;
+                                } else if (value == 'clear_all') {
+                                  _filterContractType = null;
+                                  _filterStatus = null;
+                                  _sortOrder = 'latest';
+                                }
+                              });
+                            },
+                            itemBuilder: (BuildContext context) => [
+                              // Sort Options
+                              PopupMenuItem<String>(
+                                enabled: false,
+                                child: Text(
+                                  'Sort By',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
                                 ),
                               ),
-                              Text(
-                                'Budgeting feature',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 20.0,
-                                  fontWeight: FontWeight.bold,
+                              PopupMenuItem<String>(
+                                value: 'latest',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.trend_up,
+                                      size: 18,
+                                      color: _sortOrder == 'latest'
+                                          ? Colors.green
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Latest First'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'oldest',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.trend_down,
+                                      size: 18,
+                                      color: _sortOrder == 'oldest'
+                                          ? Colors.green
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Oldest First'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuDivider(),
+                              // Contract Type Filter
+                              PopupMenuItem<String>(
+                                enabled: false,
+                                child: Text(
+                                  'Contract Type',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'all_types',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.document,
+                                      size: 18,
+                                      color: _filterContractType == null
+                                          ? Colors.green
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('All Types'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'negotiable',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.lock_1,
+                                      size: 18,
+                                      color: _filterContractType ==
+                                              ContractType.negotiable
+                                          ? Colors.orange
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Negotiable'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'non_negotiable',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.lock,
+                                      size: 18,
+                                      color: _filterContractType ==
+                                              ContractType.nonNegotiable
+                                          ? Colors.red
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Non-Negotiable'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuDivider(),
+                              // Status Filter
+                              PopupMenuItem<String>(
+                                enabled: false,
+                                child: Text(
+                                  'Status',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'all_status',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.filter,
+                                      size: 18,
+                                      color: _filterStatus == null
+                                          ? Colors.green
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('All Status'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'active',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.tick_circle,
+                                      size: 18,
+                                      color: _filterStatus ==
+                                              BudgetContractStatus.active
+                                          ? Colors.green
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Active'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'sahara',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.wallet_3,
+                                      size: 18,
+                                      color: _filterStatus ==
+                                              BudgetContractStatus.sahara
+                                          ? Colors.blue
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Sahara'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'unfunded',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.wallet_1,
+                                      size: 18,
+                                      color: _filterStatus ==
+                                              BudgetContractStatus.unfunded
+                                          ? Colors.orange
+                                          : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Unfunded'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuDivider(),
+                              // Clear Filters
+                              PopupMenuItem<String>(
+                                value: 'clear_all',
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Iconsax.refresh,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Clear All Filters',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -369,338 +682,61 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const CreateBudgetContractScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Iconsax.add_circle,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 15),
-                // Filter Card (matching HomeScreen style)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: const Color.fromARGB(198, 100, 202, 103),
-                            width: 0.5,
-                          ),
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Iconsax.wallet_3,
-                          color: Colors.green,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _filteredContracts.length.toString(),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Budget Contracts',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.black87.withOpacity(0.7),
-                        ),
-                      ),
-                      const Spacer(),
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Iconsax.setting_3,
-                          color: Colors.green,
-                          size: 22,
-                        ),
-                        onSelected: (String value) {
-                          setState(() {
-                            if (value == 'latest' || value == 'oldest') {
-                              _sortOrder = value;
-                            } else if (value == 'all_types') {
-                              _filterContractType = null;
-                            } else if (value == 'negotiable') {
-                              _filterContractType = ContractType.negotiable;
-                            } else if (value == 'non_negotiable') {
-                              _filterContractType = ContractType.nonNegotiable;
-                            } else if (value == 'all_status') {
-                              _filterStatus = null;
-                            } else if (value == 'active') {
-                              _filterStatus = BudgetContractStatus.active;
-                            } else if (value == 'sahara') {
-                              _filterStatus = BudgetContractStatus.sahara;
-                            } else if (value == 'unfunded') {
-                              _filterStatus = BudgetContractStatus.unfunded;
-                            } else if (value == 'clear_all') {
-                              _filterContractType = null;
-                              _filterStatus = null;
-                              _sortOrder = 'latest';
-                            }
-                          });
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          // Sort Options
-                          PopupMenuItem<String>(
-                            enabled: false,
-                            child: Text(
-                              'Sort By',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'latest',
-                            child: Row(
+              ),
+              // Content
+              Expanded(
+                child: streamSnapshot.connectionState == ConnectionState.waiting
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : streamSnapshot.hasError
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Iconsax.trend_up,
-                                  size: 18,
-                                  color: _sortOrder == 'latest'
-                                      ? Colors.green
-                                      : Colors.grey[600],
+                                  Iconsax.warning_2,
+                                  size: 64,
+                                  color: Colors.red[300],
                                 ),
-                                const SizedBox(width: 8),
-                                const Text('Latest First'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'oldest',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.trend_down,
-                                  size: 18,
-                                  color: _sortOrder == 'oldest'
-                                      ? Colors.green
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Oldest First'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          // Contract Type Filter
-                          PopupMenuItem<String>(
-                            enabled: false,
-                            child: Text(
-                              'Contract Type',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'all_types',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.document,
-                                  size: 18,
-                                  color: _filterContractType == null
-                                      ? Colors.green
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('All Types'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'negotiable',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.lock_1,
-                                  size: 18,
-                                  color: _filterContractType ==
-                                          ContractType.negotiable
-                                      ? Colors.orange
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Negotiable'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'non_negotiable',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.lock,
-                                  size: 18,
-                                  color: _filterContractType ==
-                                          ContractType.nonNegotiable
-                                      ? Colors.red
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Non-Negotiable'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          // Status Filter
-                          PopupMenuItem<String>(
-                            enabled: false,
-                            child: Text(
-                              'Status',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'all_status',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.filter,
-                                  size: 18,
-                                  color: _filterStatus == null
-                                      ? Colors.green
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('All Status'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'active',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.tick_circle,
-                                  size: 18,
-                                  color: _filterStatus ==
-                                          BudgetContractStatus.active
-                                      ? Colors.green
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Active'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'sahara',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.wallet_3,
-                                  size: 18,
-                                  color: _filterStatus ==
-                                          BudgetContractStatus.sahara
-                                      ? Colors.blue
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Sahara'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'unfunded',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Iconsax.wallet_1,
-                                  size: 18,
-                                  color: _filterStatus ==
-                                          BudgetContractStatus.unfunded
-                                      ? Colors.orange
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text('Unfunded'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          // Clear Filters
-                          PopupMenuItem<String>(
-                            value: 'clear_all',
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Iconsax.refresh,
-                                  size: 18,
-                                  color: Colors.red,
-                                ),
-                                SizedBox(width: 8),
+                                const SizedBox(height: 16),
                                 Text(
-                                  'Clear All Filters',
-                                  style: TextStyle(color: Colors.red),
+                                  'Error loading budgets',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${streamSnapshot.error}',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Content
-          Expanded(
-            child: _filteredContracts.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredContracts.length,
-                    itemBuilder: (context, index) {
-                      return _buildBudgetContractCard(
-                          _filteredContracts[index]);
-                    },
-                  ),
-          ),
-        ],
+                          )
+                        : filteredContracts.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: filteredContracts.length,
+                                itemBuilder: (context, index) {
+                                  return _buildBudgetContractCard(
+                                      filteredContracts[index]);
+                                },
+                              ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1017,15 +1053,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                       tooltip: 'Close Contract',
                     ),
                   ],
-                  // Close button (if fully funded, no Add Funds button)
-                  if (contract.isFullyFunded) const SizedBox(width: 8),
-                  if (contract.isFullyFunded)
-                    IconButton(
-                      onPressed: () => _showCloseContractDialog(contract),
-                      icon: const Icon(Iconsax.close_circle),
-                      color: Colors.red,
-                      tooltip: 'Close Contract',
-                    ),
+                  // Close button is not available when fully funded (100% progress)
                 ]
                 // For Non-Negotiable contracts: Standard behavior
                 else ...[

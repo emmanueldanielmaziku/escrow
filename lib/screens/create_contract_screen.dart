@@ -353,9 +353,11 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _secondParticipantController.text.length == 10 && !_isSearching
-                              ? _performSearch
-                              : null,
+                          onPressed:
+                              _secondParticipantController.text.length == 10 &&
+                                      !_isSearching
+                                  ? _performSearch
+                                  : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2E7D32),
                             foregroundColor: Colors.white,
@@ -372,7 +374,8 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                   ),
                                 )
                               : const Icon(Iconsax.search_normal, size: 18),
@@ -388,7 +391,8 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                     ],
                   ),
                 ),
-                if (_searchResults.isNotEmpty && _selectedSecondParticipant == null) ...[
+                if (_searchResults.isNotEmpty &&
+                    _selectedSecondParticipant == null) ...[
                   const SizedBox(height: 16),
                   Container(
                     decoration: BoxDecoration(
@@ -579,12 +583,12 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.1),
+                              color: Colors.blue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               Iconsax.document_text,
-                              color: Colors.purple[600],
+                              color: Colors.blue[600],
                               size: 20,
                             ),
                           ),

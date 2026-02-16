@@ -20,12 +20,9 @@ class BudgetContractModel {
   final ContractType contractType;
   final BudgetContractStatus status;
   final DateTime createdAt;
-  final DateTime? contractEndDate; // For non-negotiable contracts
-  final Duration? contractTerm; // Duration of contract
-  final String? remitterId;
-  final String? remitterName;
-  final String? beneficiaryId;
-  final String? beneficiaryName;
+  final DateTime? contractEndDate; // For non-negotiable contracts (calculated from contractTerm)
+  final String ownerId; // Budget owner/creator (required - budgets have single owner)
+  final String ownerName; // Budget owner/creator name (required)
 
   BudgetContractModel({
     required this.id,
@@ -37,11 +34,8 @@ class BudgetContractModel {
     required this.status,
     required this.createdAt,
     this.contractEndDate,
-    this.contractTerm,
-    this.remitterId,
-    this.remitterName,
-    this.beneficiaryId,
-    this.beneficiaryName,
+    required this.ownerId,
+    required this.ownerName,
   });
 
   bool get isFullyFunded => fundedAmount >= amount;
@@ -102,11 +96,8 @@ class BudgetContractModel {
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
       'contractEndDate': contractEndDate?.toIso8601String(),
-      'contractTerm': contractTerm?.inDays,
-      'remitterId': remitterId,
-      'remitterName': remitterName,
-      'beneficiaryId': beneficiaryId,
-      'beneficiaryName': beneficiaryName,
+      'ownerId': ownerId,
+      'ownerName': ownerName,
     };
   }
 
@@ -129,13 +120,9 @@ class BudgetContractModel {
       contractEndDate: map['contractEndDate'] != null
           ? DateTime.parse(map['contractEndDate'] as String)
           : null,
-      contractTerm: map['contractTerm'] != null
-          ? Duration(days: map['contractTerm'] as int)
-          : null,
-      remitterId: map['remitterId'] as String?,
-      remitterName: map['remitterName'] as String?,
-      beneficiaryId: map['beneficiaryId'] as String?,
-      beneficiaryName: map['beneficiaryName'] as String?,
+      // Handle backward compatibility: use remitterId/remitterName if ownerId/ownerName don't exist
+      ownerId: map['ownerId'] as String? ?? map['remitterId'] as String? ?? '',
+      ownerName: map['ownerName'] as String? ?? map['remitterName'] as String? ?? '',
     );
   }
 }

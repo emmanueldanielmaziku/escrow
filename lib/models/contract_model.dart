@@ -54,7 +54,7 @@ class ContractModel {
       case 'unfunded':
         return Colors.orange;
       case 'withdraw':
-        return Colors.purple;
+        return Colors.blue;
       case 'terminated':
         return Colors.red;
       case 'closed':

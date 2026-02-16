@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/budget_contract_model.dart';
-import 'notification.dart';
 
 class BudgetContractService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,13 +14,12 @@ class BudgetContractService {
     required ContractType contractType,
     required String userFullName,
     required String userPhone,
-    required String secondParticipantId,
-    required String secondParticipantName,
-    required String secondParticipantPhone,
-    Duration? contractTerm,
+    Duration?
+        contractTerm, // Contract term: when contract can be closed (for non-negotiable contracts)
   }) async {
     try {
       DateTime? contractEndDate;
+      // For non-negotiable contracts, use contractTerm to calculate when contract can be closed
       if (contractType == ContractType.nonNegotiable && contractTerm != null) {
         contractEndDate = DateTime.now().add(contractTerm);
       }
@@ -36,11 +34,8 @@ class BudgetContractService {
         status: BudgetContractStatus.unfunded,
         createdAt: DateTime.now(),
         contractEndDate: contractEndDate,
-        contractTerm: contractTerm,
-        remitterId: userId,
-        remitterName: userFullName,
-        beneficiaryId: secondParticipantId,
-        beneficiaryName: secondParticipantName,
+        ownerId: userId,
+        ownerName: userFullName,
       );
 
       // Save to Firestore
@@ -48,32 +43,6 @@ class BudgetContractService {
           .collection('budget_contracts')
           .doc(budgetContract.id)
           .set(budgetContract.toMap());
-
-      // Send notification to the second participant
-      final receiverDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(secondParticipantId)
-          .get();
-
-      if (receiverDoc.exists) {
-        final receiverData = receiverDoc.data();
-        final receiverToken = receiverData?['deviceToken'];
-        final receiverName = receiverData?['fullName'] ?? 'Unknown';
-
-        if (kDebugMode) {
-          print('🔍 Sending budget contract notification to: $receiverName');
-        }
-
-        if (receiverToken != null &&
-            receiverToken != 'null' &&
-            receiverToken.toString().isNotEmpty) {
-          await sendFCMV1Notification(
-            fcmToken: receiverToken.toString(),
-            title: userFullName,
-            body: 'New budget contract: "${budgetContract.title}"',
-          );
-        }
-      }
 
       return budgetContract;
     } catch (e) {
@@ -87,18 +56,57 @@ class BudgetContractService {
   // Get authenticated user's budget contracts
   Stream<List<BudgetContractModel>> getAuthenticatedUserBudgetContracts(
       String userId) {
+    if (kDebugMode) {
+      print('🔍 BUDGET SERVICE: Getting budget contracts for user: $userId');
+      print(
+          '🔍 BUDGET SERVICE: Query: budget_contracts where ownerId == $userId orderBy createdAt desc');
+    }
+
     return _firestore
         .collection('budget_contracts')
-        .where(Filter.or(
-          Filter('remitterId', isEqualTo: userId),
-          Filter('beneficiaryId', isEqualTo: userId),
-        ))
+        .where('ownerId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => BudgetContractModel.fromMap(doc.data()))
+        .handleError((error) {
+      if (kDebugMode) {
+        print('❌ BUDGET SERVICE STREAM ERROR: $error');
+        print('❌ BUDGET SERVICE ERROR TYPE: ${error.runtimeType}');
+        print('❌ BUDGET SERVICE ERROR DETAILS: ${error.toString()}');
+
+        // Check if it's an index error
+        if (error.toString().contains('index') ||
+            error.toString().contains('indexes')) {
+          print('⚠️ BUDGET SERVICE: Firebase index required!');
+          print(
+              '⚠️ Create composite index: budget_contracts (ownerId, createdAt)');
+        }
+      }
+    }).map((snapshot) {
+      if (kDebugMode) {
+        print(
+            '🔍 BUDGET SERVICE: Snapshot received with ${snapshot.docs.length} documents');
+      }
+
+      final contracts = snapshot.docs
+          .map((doc) {
+            try {
+              return BudgetContractModel.fromMap(doc.data());
+            } catch (e) {
+              if (kDebugMode) {
+                print('❌ BUDGET SERVICE: Error parsing document ${doc.id}: $e');
+              }
+              return null;
+            }
+          })
+          .whereType<BudgetContractModel>()
           .toList();
+
+      if (kDebugMode) {
+        print(
+            '🔍 BUDGET SERVICE: Successfully parsed ${contracts.length} budget contracts');
+      }
+
+      return contracts;
     });
   }
 
@@ -139,7 +147,8 @@ class BudgetContractService {
       }
 
       final currentData = doc.data()!;
-      final currentFunded = (currentData['fundedAmount'] as num?)?.toDouble() ?? 0.0;
+      final currentFunded =
+          (currentData['fundedAmount'] as num?)?.toDouble() ?? 0.0;
       final newFunded = currentFunded + amount;
       final totalAmount = (currentData['amount'] as num).toDouble();
 
@@ -152,10 +161,28 @@ class BudgetContractService {
         updates['status'] = BudgetContractStatus.active.name;
       }
 
-      await _firestore.collection('budget_contracts').doc(contractId).update(updates);
+      await _firestore
+          .collection('budget_contracts')
+          .doc(contractId)
+          .update(updates);
     } catch (e) {
       throw Exception('Failed to add funds: $e');
     }
   }
-}
 
+  // Delete budget contract
+  Future<void> deleteBudgetContract(String contractId) async {
+    try {
+      await _firestore.collection('budget_contracts').doc(contractId).delete();
+      if (kDebugMode) {
+        print(
+            '✅ BUDGET SERVICE: Successfully deleted budget contract: $contractId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ BUDGET SERVICE: Error deleting budget contract: $e');
+      }
+      throw Exception('Failed to delete budget contract: $e');
+    }
+  }
+}
