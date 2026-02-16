@@ -8,8 +8,11 @@ import '../services/budget_contract_service.dart';
 import '../models/contract_model.dart';
 import '../models/budget_contract_model.dart';
 import '../widgets/contract_card.dart';
+import '../utils/custom_snackbar.dart';
 import 'create_contract_screen.dart';
 import 'create_budget_contract_screen.dart';
+import 'fund_contract_screen.dart';
+import 'fund_budget_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onContractsTap;
@@ -39,6 +42,233 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userId = userProvider.user?.id ?? '';
     _contractStream = _contractService.getAuthenticatedUserContracts(userId);
     _budgetStream = _budgetService.getAuthenticatedUserBudgetContracts(userId);
+  }
+
+  Future<void> _handleDeleteContract(ContractModel contract) async {
+    try {
+      // Show confirmation dialog
+      final shouldDelete = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Contract'),
+          content: const Text(
+            'Are you sure you want to delete this contract? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDelete == true) {
+        await _contractService.deleteContract(contract.id);
+        if (context.mounted) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Contract deleted successfully',
+            type: SnackBarType.success,
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error deleting contract: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRequestWithdrawal(ContractModel contract) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.requestWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal requested successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error requesting withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleAcceptInvitation(ContractModel contract) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      if (user == null) {
+        throw Exception('User not found');
+      }
+
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Accepting invitation...',
+          type: SnackBarType.info,
+          duration: const Duration(seconds: 1),
+        );
+      }
+
+      await _contractService.acceptContract(
+        contractId: contract.id,
+        userId: user.id,
+        userFullName: user.fullName,
+        userPhone: user.phone,
+      );
+
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contract accepted successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error accepting contract: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleTerminateContract(ContractModel contract,
+      {String? terminationReason}) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.terminateContract(
+        contract.id,
+        terminationReason: terminationReason,
+        currentUserName: user?.fullName,
+      );
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contract terminated successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error terminating contract: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleConfirmWithdrawal(ContractModel contract) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.confirmWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal confirmed successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error confirming withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeclineWithdrawal(ContractModel contract) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.declineWithdrawal(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Withdrawal declined successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error declining withdrawal: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleApproveTermination(ContractModel contract) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+
+      await _contractService.approveTermination(
+        contract.id,
+        currentUserName: user?.fullName,
+      );
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contract termination approved successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error approving termination: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
   }
 
   @override
@@ -315,6 +545,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               margin: const EdgeInsets.only(right: 12),
                               child: ContractCard(
                                 contract: contract,
+                                onDeleteContract: () =>
+                                    _handleDeleteContract(contract),
+                                onFundContract: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FundContractScreen(
+                                        contract: contract,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onRequestWithdrawal: () async {
+                                  await _handleRequestWithdrawal(contract);
+                                },
+                                onAcceptInvitation: () async {
+                                  await _handleAcceptInvitation(contract);
+                                },
+                                onTerminateContract:
+                                    (String terminationReason) async {
+                                  await _handleTerminateContract(contract,
+                                      terminationReason: terminationReason);
+                                },
+                                onConfirmWithdrawal: () async {
+                                  await _handleConfirmWithdrawal(contract);
+                                },
+                                onDeclineWithdrawal: () async {
+                                  await _handleDeclineWithdrawal(contract);
+                                },
+                                onApproveTermination: () async {
+                                  await _handleApproveTermination(contract);
+                                },
                               ),
                             );
                           }).toList(),
@@ -825,30 +1087,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     constraints: const BoxConstraints(),
                   ),
                 ]
-                // For Negotiable contracts: Can withdraw and close anytime
-                else if (budget.contractType == ContractType.negotiable &&
-                    budget.status == BudgetContractStatus.active) ...[
-                  // Withdraw button (if has funds)
-                  if (budget.fundedAmount > 0)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showWithdrawDialog(context, budget),
-                        icon: const Icon(Iconsax.arrow_down_2, size: 14),
-                        label: const Text('Withdraw',
-                            style: TextStyle(fontSize: 11)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
+                // For Active contracts: Show Add Funds and Withdraw (no close button)
+                else if (budget.status == BudgetContractStatus.active) ...[
                   // Add Funds button (if not fully funded)
-                  if (!budget.isFullyFunded) ...[
-                    if (budget.fundedAmount > 0) const SizedBox(width: 6),
+                  if (!budget.isFullyFunded)
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _showAddFundsDialog(context, budget),
@@ -865,60 +1107,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    // Close button
-                    const SizedBox(width: 6),
-                    IconButton(
-                      onPressed: () =>
-                          _showCloseContractDialog(context, budget),
-                      icon: const Icon(Iconsax.close_circle, size: 18),
-                      color: Colors.red,
-                      tooltip: 'Close Contract',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ]
-                // For Non-Negotiable contracts: Standard behavior
-                else ...[
-                  if (!budget.isFullyFunded) ...[
+                  // Withdraw button - enabled based on contract type and term
+                  if (budget.fundedAmount > 0) ...[
+                    if (!budget.isFullyFunded) const SizedBox(width: 6),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _showAddFundsDialog(context, budget),
-                        icon: const Icon(Iconsax.add, size: 14),
-                        label: const Text('Add Funds',
-                            style: TextStyle(fontSize: 11)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Close button
-                    const SizedBox(width: 6),
-                    IconButton(
-                      onPressed: () =>
-                          _showCloseContractDialog(context, budget),
-                      icon: const Icon(Iconsax.close_circle, size: 18),
-                      color: Colors.red,
-                      tooltip: 'Remove Contract',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                  if (budget.isFullyFunded)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showWithdrawDialog(context, budget),
+                        onPressed: (budget.contractType ==
+                                    ContractType.negotiable ||
+                                (budget.contractEndDate != null &&
+                                    DateTime.now()
+                                        .isAfter(budget.contractEndDate!)))
+                            ? () => _showWithdrawDialog(context, budget)
+                            : null, // Disabled for Non-Negotiable if term not reached
                         icon: const Icon(Iconsax.arrow_down_2, size: 14),
                         label: const Text('Withdraw',
                             style: TextStyle(fontSize: 11)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                          backgroundColor: (budget.contractType ==
+                                      ContractType.negotiable ||
+                                  (budget.contractEndDate != null &&
+                                      DateTime.now()
+                                          .isAfter(budget.contractEndDate!)))
+                              ? Colors.blue
+                              : Colors.grey[300]!,
+                          foregroundColor: (budget.contractType ==
+                                      ContractType.negotiable ||
+                                  (budget.contractEndDate != null &&
+                                      DateTime.now()
+                                          .isAfter(budget.contractEndDate!)))
+                              ? Colors.white
+                              : Colors.grey[600]!,
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -926,6 +1144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
+                  ],
                 ],
               ],
             ),
@@ -989,49 +1208,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showAddFundsDialog(BuildContext context, BudgetContractModel contract) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Funds'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Contract: ${contract.title}'),
-            const SizedBox(height: 8),
-            Text('Current: TSh ${contract.fundedAmount.toStringAsFixed(2)}'),
-            Text('Target: TSh ${contract.amount.toStringAsFixed(2)}'),
-            const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount to Add',
-                prefixText: 'TSh ',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FundBudgetScreen(
+          budget: contract,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement add funds functionality
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Funds added successfully')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Add Funds'),
-          ),
-        ],
       ),
     );
   }

@@ -37,6 +37,8 @@
 	<string>This app needs photo library access to select images for your profile.</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>This app needs to send you notifications about contract updates and important events.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app needs access to your contacts to help you select the other party for your contract.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

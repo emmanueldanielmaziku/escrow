@@ -7,6 +7,7 @@ import '../providers/user_provider.dart';
 import '../models/budget_contract_model.dart';
 import '../services/budget_contract_service.dart';
 import 'create_budget_contract_screen.dart';
+import 'fund_budget_screen.dart';
 
 class BudgetsScreen extends StatefulWidget {
   const BudgetsScreen({super.key});
@@ -95,49 +96,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   void _showAddFundsDialog(BudgetContractModel contract) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Funds'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Contract: ${contract.title}'),
-            const SizedBox(height: 8),
-            Text('Current: TSh ${contract.fundedAmount.toStringAsFixed(2)}'),
-            Text('Target: TSh ${contract.amount.toStringAsFixed(2)}'),
-            const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount to Add',
-                prefixText: 'TSh ',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FundBudgetScreen(
+          budget: contract,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement add funds functionality
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Funds added successfully')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Add Funds'),
-          ),
-        ],
       ),
     );
   }
@@ -1007,57 +971,35 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                // For Negotiable contracts: Can withdraw and close anytime
-                if (contract.contractType == ContractType.negotiable &&
-                    contract.status == BudgetContractStatus.active) ...[
-                  // Withdraw button (if has funds)
-                  if (contract.fundedAmount > 0)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showWithdrawDialog(contract),
-                        icon: const Icon(Iconsax.arrow_down_2, size: 18),
-                        label: const Text('Withdraw'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                // For Unfunded contracts: Always allow close/remove
+                if (contract.status == BudgetContractStatus.unfunded) ...[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showAddFundsDialog(contract),
+                      icon: const Icon(Iconsax.add, size: 18),
+                      label: const Text('Add Funds'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                  // Add Funds button (if not fully funded)
-                  if (!contract.isFullyFunded) ...[
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showAddFundsDialog(contract),
-                        icon: const Icon(Iconsax.add, size: 18),
-                        label: const Text('Add Funds'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Close/Remove button next to Add Funds for negotiable
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _showCloseContractDialog(contract),
-                      icon: const Icon(Iconsax.close_circle),
-                      color: Colors.red,
-                      tooltip: 'Close Contract',
-                    ),
-                  ],
-                  // Close button is not available when fully funded (100% progress)
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _showCloseContractDialog(contract),
+                    icon: const Icon(Iconsax.close_circle),
+                    color: Colors.red,
+                    tooltip: 'Remove Contract',
+                  ),
                 ]
-                // For Non-Negotiable contracts: Standard behavior
-                else ...[
-                  if (!contract.isFullyFunded) ...[
+                // For Active contracts: Show Add Funds and Withdraw (no close button)
+                else if (contract.status == BudgetContractStatus.active) ...[
+                  // Add Funds button (if not fully funded)
+                  if (!contract.isFullyFunded)
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _showAddFundsDialog(contract),
@@ -1073,24 +1015,35 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         ),
                       ),
                     ),
-                    // Close/Remove button for unfunded contracts
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _showCloseContractDialog(contract),
-                      icon: const Icon(Iconsax.close_circle),
-                      color: Colors.red,
-                      tooltip: 'Remove Contract',
-                    ),
-                  ],
-                  if (contract.isFullyFunded)
+                  // Withdraw button - enabled based on contract type and term
+                  if (contract.fundedAmount > 0) ...[
+                    if (!contract.isFullyFunded) const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _showWithdrawDialog(contract),
+                        onPressed: (contract.contractType ==
+                                    ContractType.negotiable ||
+                                (contract.contractEndDate != null &&
+                                    DateTime.now()
+                                        .isAfter(contract.contractEndDate!)))
+                            ? () => _showWithdrawDialog(contract)
+                            : null, // Disabled for Non-Negotiable if term not reached
                         icon: const Icon(Iconsax.arrow_down_2, size: 18),
                         label: const Text('Withdraw'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                          backgroundColor: (contract.contractType ==
+                                      ContractType.negotiable ||
+                                  (contract.contractEndDate != null &&
+                                      DateTime.now()
+                                          .isAfter(contract.contractEndDate!)))
+                              ? Colors.blue
+                              : Colors.grey[300]!,
+                          foregroundColor: (contract.contractType ==
+                                      ContractType.negotiable ||
+                                  (contract.contractEndDate != null &&
+                                      DateTime.now()
+                                          .isAfter(contract.contractEndDate!)))
+                              ? Colors.white
+                              : Colors.grey[600]!,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -1098,6 +1051,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         ),
                       ),
                     ),
+                  ],
                 ],
               ],
             ),

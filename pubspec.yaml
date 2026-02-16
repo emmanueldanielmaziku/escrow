@@ -39,6 +39,7 @@ dependencies:
   iconsax: ^0.0.8
   permission_handler: ^11.0.1
   path_provider: ^2.1.2
+  flutter_contacts: ^1.1.7
 
 dev_dependencies:
   flutter_test:

@@ -100,4 +100,45 @@ class UserService {
       return snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
     });
   }
+
+  // Check if multiple phone numbers exist in escrow
+  Future<Map<String, UserModel?>> checkPhonesInEscrow(List<String> phoneNumbers) async {
+    final Map<String, UserModel?> result = {};
+    
+    if (phoneNumbers.isEmpty) {
+      return result;
+    }
+
+    try {
+      // Query users by phone numbers
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('phone', whereIn: phoneNumbers)
+          .get();
+
+      // Create a map of phone -> user
+      final phoneToUserMap = <String, UserModel>{};
+      for (var doc in querySnapshot.docs) {
+        final user = UserModel.fromMap(doc.data());
+        phoneToUserMap[user.phone] = user;
+      }
+
+      // Build result map - include all requested phones
+      for (var phone in phoneNumbers) {
+        result[phone] = phoneToUserMap[phone];
+      }
+
+      return result;
+    } catch (e) {
+      // If whereIn fails (more than 10 items), fall back to individual queries
+      for (var phone in phoneNumbers) {
+        try {
+          result[phone] = await getUserByPhone(phone);
+        } catch (e) {
+          result[phone] = null;
+        }
+      }
+      return result;
+    }
+  }
 }

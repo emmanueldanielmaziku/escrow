@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../services/contract_service.dart';
@@ -26,12 +29,15 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   final _descriptionController = TextEditingController();
   final _rewardController = TextEditingController();
   final _secondParticipantController = TextEditingController();
+  final _searchController = TextEditingController();
   bool _isLoading = false;
-  bool _isSearching = false;
+  bool _isLoadingContacts = false;
   final _contractService = ContractService();
   final _userService = UserService();
   UserModel? _selectedSecondParticipant;
-  List<UserModel> _searchResults = [];
+  List<Contact> _allContacts = [];
+  List<Contact> _filteredContacts = [];
+  Map<String, UserModel?> _contactsInEscrow = {};
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -54,42 +60,204 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     _descriptionController.dispose();
     _rewardController.dispose();
     _secondParticipantController.dispose();
+    _searchController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  Future<void> _performSearch() async {
-    final phoneNumber = _secondParticipantController.text.trim();
-    if (phoneNumber.length != 10) {
-      return;
+  String _normalizePhoneNumber(String phone) {
+    // Remove all non-digit characters
+    String digits = phone.replaceAll(RegExp(r'\D'), '');
+
+    // Handle Tanzanian phone numbers (remove country code if present)
+    if (digits.startsWith('255')) {
+      digits = digits.substring(3);
+    } else if (digits.startsWith('0')) {
+      digits = digits.substring(1);
     }
 
+    // Return last 9 digits (Tanzanian format)
+    if (digits.length >= 9) {
+      return digits.substring(digits.length - 9);
+    }
+    return digits;
+  }
+
+  // Normalize phone for matching (handles both with and without leading 0)
+  List<String> _getPhoneVariants(String normalizedPhone) {
+    // Return both with and without leading 0
+    return [
+      normalizedPhone, // 9 digits
+      '0$normalizedPhone', // 10 digits with leading 0
+    ];
+  }
+
+  Future<void> _loadContacts() async {
     setState(() {
-      _isSearching = true;
-      _searchResults = [];
+      _isLoadingContacts = true;
     });
 
     try {
-      // Get the first result from the stream
-      final stream = _userService.searchUsersByPhone(phoneNumber);
-      await for (final users in stream) {
+      // Request contacts permission
+      final permission = await Permission.contacts.request();
+      if (permission.isDenied || permission.isPermanentlyDenied) {
         if (mounted) {
-          setState(() {
-            _searchResults = users;
-            _isSearching = false;
-          });
+          CustomSnackBar.show(
+            context: context,
+            message:
+                'Contacts permission is required to select the other party',
+            type: SnackBarType.error,
+          );
         }
-        break; // Only take the first result
+        setState(() {
+          _isLoadingContacts = false;
+        });
+        return;
+      }
+
+      // Load contacts
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withThumbnail: false,
+      );
+
+      // Filter contacts with phone numbers
+      final contactsWithPhones =
+          contacts.where((contact) => contact.phones.isNotEmpty).toList();
+
+      // Normalize phone numbers and check which ones are in escrow
+      final phoneNumbers = contactsWithPhones
+          .expand((contact) => contact.phones)
+          .map((phone) => _normalizePhoneNumber(phone.number))
+          .where((phone) => phone.length == 9)
+          .toSet()
+          .toList();
+
+      // Get all phone variants (with and without leading 0) for matching
+      final allPhoneVariants = phoneNumbers
+          .expand((phone) => _getPhoneVariants(phone))
+          .toSet()
+          .toList();
+
+      // Check which contacts are in escrow (batch check)
+      Map<String, UserModel?> escrowUsers = {};
+      if (allPhoneVariants.isNotEmpty) {
+        // Check all variants, but limit to 10 per batch (Firestore whereIn limit)
+        final batches = <List<String>>[];
+        for (var i = 0; i < allPhoneVariants.length; i += 10) {
+          batches.add(allPhoneVariants.sublist(
+            i,
+            i + 10 > allPhoneVariants.length ? allPhoneVariants.length : i + 10,
+          ));
+        }
+
+        for (var batch in batches) {
+          final batchResults = await _userService.checkPhonesInEscrow(batch);
+          escrowUsers.addAll(batchResults);
+        }
+
+        // Map normalized phones (9 digits) to users found
+        final normalizedToUser = <String, UserModel?>{};
+        for (var normalizedPhone in phoneNumbers) {
+          final variants = _getPhoneVariants(normalizedPhone);
+          UserModel? foundUser;
+          for (var variant in variants) {
+            if (escrowUsers.containsKey(variant) &&
+                escrowUsers[variant] != null) {
+              foundUser = escrowUsers[variant];
+              break;
+            }
+          }
+          normalizedToUser[normalizedPhone] = foundUser;
+        }
+        escrowUsers = normalizedToUser;
+      }
+
+      if (mounted) {
+        setState(() {
+          _allContacts = contactsWithPhones;
+          _filteredContacts = contactsWithPhones;
+          _contactsInEscrow = escrowUsers;
+          _isLoadingContacts = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isSearching = false;
-          _searchResults = [];
+          _isLoadingContacts = false;
         });
         CustomSnackBar.show(
           context: context,
-          message: 'Error searching for user: $e',
+          message: 'Error loading contacts: $e',
+          type: SnackBarType.error,
+        );
+      }
+    }
+  }
+
+  void _filterContacts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredContacts = _allContacts;
+      });
+      return;
+    }
+
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      _filteredContacts = _allContacts.where((contact) {
+        final name = contact.name.first.toLowerCase();
+        final phones = contact.phones
+            .map((p) => _normalizePhoneNumber(p.number))
+            .join(' ');
+        return name.contains(lowerQuery) || phones.contains(lowerQuery);
+      }).toList();
+    });
+  }
+
+  UserModel? _getContactUser(Contact contact) {
+    for (var phone in contact.phones) {
+      final normalizedPhone = _normalizePhoneNumber(phone.number);
+      if (normalizedPhone.length == 9) {
+        return _contactsInEscrow[normalizedPhone];
+      }
+    }
+    return null;
+  }
+
+  String _getContactPhone(Contact contact) {
+    if (contact.phones.isEmpty) return '';
+    final normalized = _normalizePhoneNumber(contact.phones.first.number);
+    return normalized.length == 9 ? normalized : '';
+  }
+
+  Future<void> _inviteContact(Contact contact) async {
+    final phone = _getContactPhone(contact);
+    if (phone.isEmpty) return;
+
+    // Format phone number for WhatsApp (Tanzania: 255XXXXXXXXX)
+    final whatsappPhone = '255$phone';
+    final whatsappUrl =
+        'https://wa.me/$whatsappPhone?text=${Uri.encodeComponent('Hi! Join me on Mai Escrow to create secure contracts together. Download the app now!')}';
+
+    try {
+      final uri = Uri.parse(whatsappUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Could not open WhatsApp',
+            type: SnackBarType.error,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error opening WhatsApp: $e',
           type: SnackBarType.error,
         );
       }
@@ -264,7 +432,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
 
                 const SizedBox(height: 32),
 
-                // Second Participant Search
+                // Second Participant Selection from Contacts
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -287,7 +455,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
-                              Iconsax.user_search,
+                              Iconsax.people,
                               color: Colors.blue[600],
                               size: 20,
                             ),
@@ -298,7 +466,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Find ${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}',
+                                  'Select ${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -308,7 +476,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Search by phone number to find the other party',
+                                  'Choose from your contacts',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey[600],
@@ -321,45 +489,12 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                         ],
                       ),
                       const SizedBox(height: 20),
-                      CustomTextField(
-                        controller: _secondParticipantController,
-                        label: 'Phone Number',
-                        hint: 'Enter phone number',
-                        prefixIcon:
-                            const Icon(Iconsax.call, color: Colors.grey),
-                        keyboardType: TextInputType.phone,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        textInputAction: TextInputAction.next,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSecondParticipant = null;
-                            _searchResults = [];
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a phone number';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed:
-                              _secondParticipantController.text.length == 10 &&
-                                      !_isSearching
-                                  ? _performSearch
-                                  : null,
+                          onPressed: _isLoadingContacts ? null : _loadContacts,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
+                            backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
                             disabledBackgroundColor: Colors.grey[300],
                             disabledForegroundColor: Colors.grey[600],
@@ -368,7 +503,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          icon: _isSearching
+                          icon: _isLoadingContacts
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
@@ -378,9 +513,13 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                                         Colors.white),
                                   ),
                                 )
-                              : const Icon(Iconsax.search_normal, size: 18),
+                              : const Icon(Iconsax.people, size: 18),
                           label: Text(
-                            _isSearching ? 'Searching...' : 'Search',
+                            _isLoadingContacts
+                                ? 'Loading Contacts...'
+                                : _allContacts.isEmpty
+                                    ? 'Load Contacts'
+                                    : 'Reload Contacts',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -388,94 +527,65 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                if (_searchResults.isNotEmpty &&
-                    _selectedSecondParticipant == null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey[200]!, width: 1),
-                    ),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _searchResults.length,
-                      itemBuilder: (context, index) {
-                        final user = _searchResults[index];
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedSecondParticipant = user;
-                              _secondParticipantController.text = user.phone;
-                              _searchResults = [];
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
+                      if (_allContacts.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        CustomTextField(
+                          controller: _searchController,
+                          label: 'Search Contacts',
+                          hint: 'Search by name or phone',
+                          prefixIcon: const Icon(Iconsax.search_normal,
+                              color: Colors.grey),
+                          textInputAction: TextInputAction.search,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          onChanged: _filterContacts,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border:
+                                Border.all(color: Colors.grey[200]!, width: 1),
+                          ),
+                          child: _filteredContacts.isEmpty
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32),
                                     child: Text(
-                                      user.fullName[0].toUpperCase(),
+                                      'No contacts found',
                                       style: TextStyle(
-                                        color: Colors.blue[700],
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 18,
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ),
+                                )
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: _filteredContacts.length,
+                                  itemBuilder: (context, index) {
+                                    final contact = _filteredContacts[index];
+                                    final user = _getContactUser(contact);
+                                    final phone = _getContactPhone(contact);
+                                    final isInEscrow = user != null;
+
+                                    return _buildContactItem(
+                                      contact,
+                                      user,
+                                      phone,
+                                      isInEscrow,
+                                    );
+                                  },
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user.fullName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        user.phone,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(
-                                  Iconsax.arrow_right_3,
-                                  color: Colors.grey[400],
-                                  size: 16,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
                 if (_selectedSecondParticipant != null) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -821,6 +931,157 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactItem(
+    Contact contact,
+    UserModel? user,
+    String phone,
+    bool isInEscrow,
+  ) {
+    final contactName =
+        contact.name.first.isNotEmpty ? contact.name.first : 'Unknown';
+    final displayPhone = phone.isNotEmpty ? '0$phone' : 'No phone';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _selectedSecondParticipant?.id == user?.id
+              ? const Color(0xFF2E7D32)
+              : Colors.grey[200]!,
+          width: _selectedSecondParticipant?.id == user?.id ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: isInEscrow
+            ? () {
+                setState(() {
+                  _selectedSecondParticipant = user;
+                  _secondParticipantController.text = user!.phone;
+                });
+              }
+            : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isInEscrow
+                      ? const Color(0xFF2E7D32).withOpacity(0.1)
+                      : Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    contactName[0].toUpperCase(),
+                    style: TextStyle(
+                      color: isInEscrow
+                          ? const Color(0xFF2E7D32)
+                          : Colors.grey[600],
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      contactName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          displayPhone,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (isInEscrow)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'In Escrow',
+                              style: TextStyle(
+                                color: const Color(0xFF2E7D32),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isInEscrow)
+                Icon(
+                  _selectedSecondParticipant?.id == user?.id
+                      ? Icons.check_circle
+                      : Iconsax.arrow_right_3,
+                  color: _selectedSecondParticipant?.id == user?.id
+                      ? const Color(0xFF2E7D32)
+                      : Colors.grey[400],
+                  size: 20,
+                )
+              else
+                TextButton.icon(
+                  onPressed: () => _inviteContact(contact),
+                  icon: const Icon(
+                    Iconsax.send_2,
+                    size: 16,
+                    color: Color(0xFF2E7D32),
+                  ),
+                  label: const Text(
+                    'Invite',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
