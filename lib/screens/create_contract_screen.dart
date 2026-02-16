@@ -5,12 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../services/contract_service.dart';
-import '../services/user_service.dart';
+import '../services/contacts_cache_service.dart';
 import '../models/user_model.dart';
 import '../utils/custom_snackbar.dart';
 
@@ -33,11 +32,10 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   bool _isLoading = false;
   bool _isLoadingContacts = false;
   final _contractService = ContractService();
-  final _userService = UserService();
+  final _contactsCacheService = ContactsCacheService();
   UserModel? _selectedSecondParticipant;
   List<Contact> _allContacts = [];
   List<Contact> _filteredContacts = [];
-  Map<String, UserModel?> _contactsInEscrow = {};
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -52,6 +50,20 @@ class _CreateContractScreenState extends State<CreateContractScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+    
+    // Load contacts in background when screen initializes
+    _loadCachedContacts();
+    _contactsCacheService.loadContactsInBackground();
+  }
+
+  // Load contacts from cache immediately
+  void _loadCachedContacts() {
+    if (_contactsCacheService.hasCachedContacts) {
+      setState(() {
+        _allContacts = _contactsCacheService.cachedContacts!;
+        _filteredContacts = _allContacts;
+      });
+    }
   }
 
   @override
@@ -65,119 +77,20 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     super.dispose();
   }
 
-  String _normalizePhoneNumber(String phone) {
-    // Remove all non-digit characters
-    String digits = phone.replaceAll(RegExp(r'\D'), '');
 
-    // Handle Tanzanian phone numbers (remove country code if present)
-    if (digits.startsWith('255')) {
-      digits = digits.substring(3);
-    } else if (digits.startsWith('0')) {
-      digits = digits.substring(1);
-    }
-
-    // Return last 9 digits (Tanzanian format)
-    if (digits.length >= 9) {
-      return digits.substring(digits.length - 9);
-    }
-    return digits;
-  }
-
-  // Normalize phone for matching (handles both with and without leading 0)
-  List<String> _getPhoneVariants(String normalizedPhone) {
-    // Return both with and without leading 0
-    return [
-      normalizedPhone, // 9 digits
-      '0$normalizedPhone', // 10 digits with leading 0
-    ];
-  }
-
-  Future<void> _loadContacts() async {
+  Future<void> _loadContacts({bool forceRefresh = false}) async {
     setState(() {
       _isLoadingContacts = true;
     });
 
     try {
-      // Request contacts permission
-      final permission = await Permission.contacts.request();
-      if (permission.isDenied || permission.isPermanentlyDenied) {
-        if (mounted) {
-          CustomSnackBar.show(
-            context: context,
-            message:
-                'Contacts permission is required to select the other party',
-            type: SnackBarType.error,
-          );
-        }
-        setState(() {
-          _isLoadingContacts = false;
-        });
-        return;
-      }
-
-      // Load contacts
-      final contacts = await FlutterContacts.getContacts(
-        withProperties: true,
-        withThumbnail: false,
-      );
-
-      // Filter contacts with phone numbers
-      final contactsWithPhones =
-          contacts.where((contact) => contact.phones.isNotEmpty).toList();
-
-      // Normalize phone numbers and check which ones are in escrow
-      final phoneNumbers = contactsWithPhones
-          .expand((contact) => contact.phones)
-          .map((phone) => _normalizePhoneNumber(phone.number))
-          .where((phone) => phone.length == 9)
-          .toSet()
-          .toList();
-
-      // Get all phone variants (with and without leading 0) for matching
-      final allPhoneVariants = phoneNumbers
-          .expand((phone) => _getPhoneVariants(phone))
-          .toSet()
-          .toList();
-
-      // Check which contacts are in escrow (batch check)
-      Map<String, UserModel?> escrowUsers = {};
-      if (allPhoneVariants.isNotEmpty) {
-        // Check all variants, but limit to 10 per batch (Firestore whereIn limit)
-        final batches = <List<String>>[];
-        for (var i = 0; i < allPhoneVariants.length; i += 10) {
-          batches.add(allPhoneVariants.sublist(
-            i,
-            i + 10 > allPhoneVariants.length ? allPhoneVariants.length : i + 10,
-          ));
-        }
-
-        for (var batch in batches) {
-          final batchResults = await _userService.checkPhonesInEscrow(batch);
-          escrowUsers.addAll(batchResults);
-        }
-
-        // Map normalized phones (9 digits) to users found
-        final normalizedToUser = <String, UserModel?>{};
-        for (var normalizedPhone in phoneNumbers) {
-          final variants = _getPhoneVariants(normalizedPhone);
-          UserModel? foundUser;
-          for (var variant in variants) {
-            if (escrowUsers.containsKey(variant) &&
-                escrowUsers[variant] != null) {
-              foundUser = escrowUsers[variant];
-              break;
-            }
-          }
-          normalizedToUser[normalizedPhone] = foundUser;
-        }
-        escrowUsers = normalizedToUser;
-      }
+      // Use cache service to load contacts
+      await _contactsCacheService.loadContacts(forceRefresh: forceRefresh);
 
       if (mounted) {
         setState(() {
-          _allContacts = contactsWithPhones;
-          _filteredContacts = contactsWithPhones;
-          _contactsInEscrow = escrowUsers;
+          _allContacts = _contactsCacheService.cachedContacts ?? [];
+          _filteredContacts = _allContacts;
           _isLoadingContacts = false;
         });
       }
@@ -186,13 +99,233 @@ class _CreateContractScreenState extends State<CreateContractScreen>
         setState(() {
           _isLoadingContacts = false;
         });
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error loading contacts: $e',
-          type: SnackBarType.error,
-        );
+        
+        // Check if it's a permission error
+        if (e.toString().contains('permission')) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Contacts permission is required to select the other party',
+            type: SnackBarType.error,
+          );
+        } else {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Error loading contacts: $e',
+            type: SnackBarType.error,
+          );
+        }
       }
     }
+  }
+
+  Future<void> _refreshContacts() async {
+    _searchController.clear();
+    _filterContacts('');
+    await _loadContacts(forceRefresh: true);
+  }
+
+  Future<void> _showContactsBottomSheet() async {
+    // Clear search when opening
+    _searchController.clear();
+    _filterContacts('');
+
+    // Load contacts from cache first (instant), then refresh in background if needed
+    _loadCachedContacts();
+    
+    // If no cached contacts, load them
+    if (_allContacts.isEmpty) {
+      await _loadContacts();
+    } else {
+      // Refresh in background if cache is stale
+      _contactsCacheService.loadContactsInBackground();
+    }
+
+    // Show bottom sheet
+    if (mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _buildContactsBottomSheet(),
+      );
+    }
+  }
+
+  Widget _buildContactsBottomSheet() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Iconsax.people,
+                        color: Colors.blue[600],
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select ${_selectedRole == 'Remitter' ? 'Beneficiary' : 'Remitter'}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.grey[800],
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Choose from your contacts',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Iconsax.refresh,
+                        color: Colors.grey[600],
+                      ),
+                      onPressed: _isLoadingContacts ? null : _refreshContacts,
+                      tooltip: 'Refresh Contacts',
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.grey[600],
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: CustomTextField(
+                  controller: _searchController,
+                  label: 'Search Contacts',
+                  hint: 'Search by name or phone',
+                  prefixIcon: const Icon(Iconsax.search_normal,
+                      color: Colors.grey),
+                  textInputAction: TextInputAction.search,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  onChanged: _filterContacts,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Contacts list
+              Expanded(
+                child: _isLoadingContacts
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : _filteredContacts.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Iconsax.people,
+                                    size: 64,
+                                    color: Colors.grey[300],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No contacts found',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Try searching with a different term',
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: _filteredContacts.length,
+                            itemBuilder: (context, index) {
+                              final contact = _filteredContacts[index];
+                              final user = _getContactUser(contact);
+                              final phone = _getContactPhone(contact);
+                              final isInEscrow = user != null;
+
+                              return _buildContactItem(
+                                contact,
+                                user,
+                                phone,
+                                isInEscrow,
+                                onSelect: () {
+                                  if (isInEscrow) {
+                                    setState(() {
+                                      _selectedSecondParticipant = user;
+                                      _secondParticipantController.text =
+                                          user.phone;
+                                    });
+                                    Navigator.pop(context);
+                                  }
+                                },
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _filterContacts(String query) {
@@ -207,28 +340,23 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     setState(() {
       _filteredContacts = _allContacts.where((contact) {
         final name = contact.name.first.toLowerCase();
-        final phones = contact.phones
-            .map((p) => _normalizePhoneNumber(p.number))
-            .join(' ');
-        return name.contains(lowerQuery) || phones.contains(lowerQuery);
+        final phone = _contactsCacheService.getContactPhone(contact);
+        final displayPhone = phone.isNotEmpty ? '0$phone' : '';
+        return name.contains(lowerQuery) || 
+               displayPhone.contains(lowerQuery) ||
+               phone.contains(lowerQuery);
       }).toList();
     });
   }
 
   UserModel? _getContactUser(Contact contact) {
-    for (var phone in contact.phones) {
-      final normalizedPhone = _normalizePhoneNumber(phone.number);
-      if (normalizedPhone.length == 9) {
-        return _contactsInEscrow[normalizedPhone];
-      }
-    }
-    return null;
+    // Use cache service method
+    return _contactsCacheService.getContactUser(contact);
   }
 
   String _getContactPhone(Contact contact) {
-    if (contact.phones.isEmpty) return '';
-    final normalized = _normalizePhoneNumber(contact.phones.first.number);
-    return normalized.length == 9 ? normalized : '';
+    // Use cache service method
+    return _contactsCacheService.getContactPhone(contact);
   }
 
   Future<void> _inviteContact(Contact contact) async {
@@ -492,7 +620,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isLoadingContacts ? null : _loadContacts,
+                          onPressed: _showContactsBottomSheet,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
@@ -503,86 +631,16 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          icon: _isLoadingContacts
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : const Icon(Iconsax.people, size: 18),
-                          label: Text(
-                            _isLoadingContacts
-                                ? 'Loading Contacts...'
-                                : _allContacts.isEmpty
-                                    ? 'Load Contacts'
-                                    : 'Reload Contacts',
-                            style: const TextStyle(
+                          icon: const Icon(Iconsax.people, size: 18),
+                          label: const Text(
+                            'Select Contact',
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
-                      if (_allContacts.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        CustomTextField(
-                          controller: _searchController,
-                          label: 'Search Contacts',
-                          hint: 'Search by name or phone',
-                          prefixIcon: const Icon(Iconsax.search_normal,
-                              color: Colors.grey),
-                          textInputAction: TextInputAction.search,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          onChanged: _filterContacts,
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          constraints: const BoxConstraints(maxHeight: 400),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: Colors.grey[200]!, width: 1),
-                          ),
-                          child: _filteredContacts.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(32),
-                                    child: Text(
-                                      'No contacts found',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  itemCount: _filteredContacts.length,
-                                  itemBuilder: (context, index) {
-                                    final contact = _filteredContacts[index];
-                                    final user = _getContactUser(contact);
-                                    final phone = _getContactPhone(contact);
-                                    final isInEscrow = user != null;
-
-                                    return _buildContactItem(
-                                      contact,
-                                      user,
-                                      phone,
-                                      isInEscrow,
-                                    );
-                                  },
-                                ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -941,8 +999,9 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     Contact contact,
     UserModel? user,
     String phone,
-    bool isInEscrow,
-  ) {
+    bool isInEscrow, {
+    VoidCallback? onSelect,
+  }) {
     final contactName =
         contact.name.first.isNotEmpty ? contact.name.first : 'Unknown';
     final displayPhone = phone.isNotEmpty ? '0$phone' : 'No phone';
@@ -960,14 +1019,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
         ),
       ),
       child: InkWell(
-        onTap: isInEscrow
-            ? () {
-                setState(() {
-                  _selectedSecondParticipant = user;
-                  _secondParticipantController.text = user!.phone;
-                });
-              }
-            : null,
+        onTap: isInEscrow ? (onSelect ?? () {}) : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
