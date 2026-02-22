@@ -15,7 +15,6 @@ import 'services/notification_settings_service.dart';
 import 'providers/user_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/main_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';

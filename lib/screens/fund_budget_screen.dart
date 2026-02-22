@@ -7,9 +7,7 @@ import '../models/budget_contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
-import '../services/budget_transaction_service.dart';
 import '../utils/custom_snackbar.dart';
-import '../utils/fee_calculator.dart';
 
 class FundBudgetScreen extends StatefulWidget {
   final BudgetContractModel budget;
@@ -25,7 +23,6 @@ class FundBudgetScreen extends StatefulWidget {
 
 class _FundBudgetScreenState extends State<FundBudgetScreen> {
   final _budgetPaymentService = BudgetPaymentService();
-  final _budgetTransactionService = BudgetTransactionService();
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
   final _amountController = TextEditingController();
@@ -34,7 +31,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   bool _showOverlay = false;
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
-  String? _currentDepositId;
 
   final _budgetService = BudgetContractService();
 
@@ -158,7 +154,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       }
 
       // Call the new budget-specific endpoint
-      final result = await _budgetPaymentService.initiateBudgetDeposit(
+      await _budgetPaymentService.initiateBudgetDeposit(
         budgetId: widget.budget.id,
         amount: amount,
         ownerId: user.id,
@@ -167,7 +163,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
         narration: 'Funding budget: ${widget.budget.title}',
       );
 
-      _currentDepositId = result['data']?['depositId'] as String?;
 
       if (mounted) {
         setState(() {
