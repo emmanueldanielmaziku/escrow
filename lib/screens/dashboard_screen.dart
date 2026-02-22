@@ -13,6 +13,7 @@ import 'create_contract_screen.dart';
 import 'create_budget_contract_screen.dart';
 import 'fund_contract_screen.dart';
 import 'fund_budget_screen.dart';
+import 'withdraw_budget_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onContractsTap;
@@ -874,13 +875,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: [
+        children: [
             // Header with title and status
-            Row(
-              children: [
+          Row(
+            children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -894,15 +895,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+              Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        budget.title,
+                  budget.title,
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                           color: Colors.grey[800],
                         ),
                         maxLines: 1,
@@ -919,36 +920,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                  ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
                     vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: statusColor.withOpacity(0.3),
                       width: 0.5,
                     ),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
             // Contract Type & Timer
-            Row(
-              children: [
+          Row(
+            children: [
                 Row(
                   children: [
                     Icon(
@@ -961,11 +962,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : Colors.red,
                     ),
                     const SizedBox(width: 6),
-                    Text(
+              Text(
                       contractTypeText,
-                      style: TextStyle(
+                style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                         color: budget.contractType == ContractType.negotiable
                             ? Colors.orange
                             : Colors.red,
@@ -985,7 +986,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: Colors.blue,
                       ),
                       const SizedBox(width: 4),
-                      Text(
+              Text(
                         _formatBudgetDuration(budget.remainingTime!),
                         style: const TextStyle(
                           fontSize: 12,
@@ -1008,8 +1009,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       'Funding Progress',
-                      style: TextStyle(
-                        fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
@@ -1020,17 +1021,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
-                      ),
-                    ),
-                  ],
                 ),
+              ),
+            ],
+          ),
                 const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(3),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.grey[200],
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(3),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -1155,54 +1156,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showWithdrawDialog(BuildContext context, BudgetContractModel contract) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Withdraw Funds'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Contract: ${contract.title}'),
-            const SizedBox(height: 8),
-            Text(
-              'Available: TSh ${contract.fundedAmount.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Amount to Withdraw',
-                prefixText: 'TSh ',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement withdraw functionality
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Funds withdrawn successfully')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Withdraw'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WithdrawBudgetScreen(budget: contract),
       ),
     );
   }

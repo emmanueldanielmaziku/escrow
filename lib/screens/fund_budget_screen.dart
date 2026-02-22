@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'dart:ui';
 import '../models/budget_contract_model.dart';
 import '../providers/user_provider.dart';
-import '../services/deposit_service.dart';
 import '../services/budget_contract_service.dart';
-import '../services/payment_service.dart';
+import '../services/budget_payment_service.dart';
+import '../services/budget_transaction_service.dart';
 import '../utils/custom_snackbar.dart';
 import '../utils/fee_calculator.dart';
 
@@ -24,8 +24,8 @@ class FundBudgetScreen extends StatefulWidget {
 }
 
 class _FundBudgetScreenState extends State<FundBudgetScreen> {
-  final _depositService = DepositService();
-  final _paymentService = PaymentService();
+  final _budgetPaymentService = BudgetPaymentService();
+  final _budgetTransactionService = BudgetTransactionService();
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
   final _amountController = TextEditingController();
@@ -34,6 +34,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   bool _showOverlay = false;
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
+  String? _currentDepositId;
 
   final _budgetService = BudgetContractService();
 
@@ -146,103 +147,70 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final user = userProvider.user;
 
-      if (user == null) {
-        throw Exception('User not found');
-      }
+      if (user == null) throw Exception('User not found');
 
-      // Format phone number to international format
+      // Format phone to international (255XXXXXXXXX)
       String formattedMsisdn = _phoneNumberController.text.trim();
       if (!formattedMsisdn.startsWith('255')) {
-        if (formattedMsisdn.startsWith('0')) {
-          formattedMsisdn = '255${formattedMsisdn.substring(1)}';
-        } else {
-          formattedMsisdn = '255$formattedMsisdn';
-        }
+        formattedMsisdn = formattedMsisdn.startsWith('0')
+            ? '255${formattedMsisdn.substring(1)}'
+            : '255$formattedMsisdn';
       }
 
-      // Calculate total amount including fee
-      final totalAmount = FeeCalculator.calculateTotal(amount);
-
-      // Initiate payment via API
-      await _paymentService.initiatePayment(
-        contractId: widget.budget.id,
-        amount: totalAmount,
-        initiatorId: user.id,
-        beneficiaryId: widget.budget.ownerId,
-        currency: 'TZS',
+      // Call the new budget-specific endpoint
+      final result = await _budgetPaymentService.initiateBudgetDeposit(
+        budgetId: widget.budget.id,
+        amount: amount,
+        ownerId: user.id,
         msisdn: formattedMsisdn,
         channel: _paymentProviders[_selectedProvider]!['channel']!,
-        narration: 'Payment for budget contract ${widget.budget.id}',
+        narration: 'Funding budget: ${widget.budget.title}',
       );
 
-      // Create deposit record
-      await _depositService.createDeposit(
-        contractId: widget.budget.id,
-        userId: user.id,
-        provider: _selectedProvider!,
-        contractFund: amount.toString(),
-        channel: _paymentProviders[_selectedProvider]!['channel']!,
-        paymentMessage: _phoneNumberController.text,
-      );
+      _currentDepositId = result['data']?['depositId'] as String?;
 
-      // Add funds to budget contract
-      await _budgetService.addFunds(widget.budget.id, amount);
-
-      // Payment initiated successfully, now monitor budget status
       if (mounted) {
         setState(() {
           _isInitiatingPayment = false;
           _showOverlay = true;
         });
-        await _monitorBudgetStatus();
+        await _monitorDepositStatus();
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isInitiatingPayment = false;
-        });
+        setState(() => _isInitiatingPayment = false);
         CustomSnackBar.show(
           context: context,
-          message: 'Budget funding was unsuccessful!',
+          message: e.toString().replaceFirst('Exception: ', ''),
           type: SnackBarType.error,
         );
       }
     }
   }
 
-  Future<void> _monitorBudgetStatus() async {
-    const maxWaitTime = Duration(seconds: 60);
-    const checkInterval = Duration(seconds: 2);
-    final startTime = DateTime.now();
+  Future<void> _monitorDepositStatus() async {
+    const timeout = Duration(seconds: 90);
+    const interval = Duration(seconds: 3);
+    final deadline = DateTime.now().add(timeout);
 
-    while (DateTime.now().difference(startTime) < maxWaitTime) {
+    while (DateTime.now().isBefore(deadline)) {
       try {
-        final budget =
-            await _budgetService.getBudgetContractDetails(widget.budget.id);
-        if (budget?.status == BudgetContractStatus.active) {
-          // Budget is now active, show success overlay
+        // Poll Firestore budget_contracts for status change
+        final budget = await _budgetService.getBudgetContractDetails(widget.budget.id);
+
+        if (budget?.status == BudgetContractStatus.active ||
+            (budget != null && budget.fundedAmount > widget.budget.fundedAmount)) {
           if (mounted) {
-            setState(() {
-              _isSuccess = true;
-            });
-            // Show success message for 2 seconds
+            setState(() => _isSuccess = true);
             await Future.delayed(const Duration(seconds: 2));
-
-            // Close overlay first
             if (mounted) {
-              setState(() {
-                _showOverlay = false;
-              });
-
-              // Wait a bit for overlay to close smoothly
+              setState(() => _showOverlay = false);
               await Future.delayed(const Duration(milliseconds: 300));
-
-              // Close the fund budget screen
               if (mounted) {
                 Navigator.pop(context);
                 CustomSnackBar.show(
                   context: context,
-                  message: 'Budget funded successfully!',
+                  message: 'Budget funded successfully! 🎉',
                   type: SnackBarType.success,
                 );
               }
@@ -250,18 +218,19 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
           }
           return;
         }
-      } catch (e) {
-        // Continue monitoring even if there's an error fetching budget
-      }
+      } catch (_) {}
 
-      await Future.delayed(checkInterval);
+      await Future.delayed(interval);
     }
 
-    // Timeout reached, close overlay
+    // Timeout — user can check later; the callback will still update the budget
     if (mounted) {
-      setState(() {
-        _showOverlay = false;
-      });
+      setState(() => _showOverlay = false);
+      CustomSnackBar.show(
+        context: context,
+        message: 'Payment is being processed. Your budget will update shortly.',
+        type: SnackBarType.info,
+      );
     }
   }
 

@@ -1,10 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_text_field.dart';
@@ -29,8 +31,12 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   final _rewardController = TextEditingController();
   final _secondParticipantController = TextEditingController();
   final _searchController = TextEditingController();
+  final _addContactNameController = TextEditingController();
+  final _addContactPhoneController = TextEditingController();
   bool _isLoading = false;
   bool _isLoadingContacts = false;
+  bool _isLoadingContactsForButton = false;
+  bool _isAddingContact = false;
   final _contractService = ContractService();
   final _contactsCacheService = ContactsCacheService();
   UserModel? _selectedSecondParticipant;
@@ -73,6 +79,8 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     _rewardController.dispose();
     _secondParticipantController.dispose();
     _searchController.dispose();
+    _addContactNameController.dispose();
+    _addContactPhoneController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -118,6 +126,16 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     }
   }
 
+  // Update contacts in bottom sheet when loading completes
+  void _updateContactsInBottomSheet() {
+    if (mounted && _contactsCacheService.hasCachedContacts) {
+      setState(() {
+        _allContacts = _contactsCacheService.cachedContacts!;
+        _filteredContacts = _allContacts;
+      });
+    }
+  }
+
   Future<void> _refreshContacts() async {
     _searchController.clear();
     _filterContacts('');
@@ -125,22 +143,31 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   }
 
   Future<void> _showContactsBottomSheet() async {
+    // Load contacts from cache first (instant)
+    _loadCachedContacts();
+    
+    // If no cached contacts, show loading and load them before opening bottom sheet
+    if (_allContacts.isEmpty) {
+      setState(() {
+        _isLoadingContactsForButton = true;
+      });
+      
+      try {
+        await _loadContacts();
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoadingContactsForButton = false;
+          });
+        }
+      }
+    }
+    
     // Clear search when opening
     _searchController.clear();
     _filterContacts('');
-
-    // Load contacts from cache first (instant), then refresh in background if needed
-    _loadCachedContacts();
     
-    // If no cached contacts, load them
-    if (_allContacts.isEmpty) {
-      await _loadContacts();
-    } else {
-      // Refresh in background if cache is stale
-      _contactsCacheService.loadContactsInBackground();
-    }
-
-    // Show bottom sheet
+    // Show bottom sheet with contacts (cached or newly loaded)
     if (mounted) {
       showModalBottomSheet(
         context: context,
@@ -148,6 +175,15 @@ class _CreateContractScreenState extends State<CreateContractScreen>
         backgroundColor: Colors.transparent,
         builder: (context) => _buildContactsBottomSheet(),
       );
+    }
+
+    // Refresh in background if cache is stale (non-blocking, only if we had cached contacts)
+    if (_allContacts.isNotEmpty && _contactsCacheService.shouldRefresh()) {
+      _contactsCacheService.loadContactsFromDevice(forceRefresh: false).then((_) {
+        _updateContactsInBottomSheet();
+      }).catchError((e) {
+        // Silently fail - cached contacts are already shown
+      });
     }
   }
 
@@ -216,6 +252,14 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                           ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Iconsax.add,
+                        color: const Color(0xFF16A34A),
+                      ),
+                      onPressed: _showAddContactDialog,
+                      tooltip: 'Add Contact',
                     ),
                     IconButton(
                       icon: Icon(
@@ -329,6 +373,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   }
 
   void _filterContacts(String query) {
+    // Filter immediately on every keystroke
     if (query.isEmpty) {
       setState(() {
         _filteredContacts = _allContacts;
@@ -336,15 +381,30 @@ class _CreateContractScreenState extends State<CreateContractScreen>
       return;
     }
 
-    final lowerQuery = query.toLowerCase();
+    final lowerQuery = query.toLowerCase().trim();
     setState(() {
       _filteredContacts = _allContacts.where((contact) {
-        final name = contact.name.first.toLowerCase();
+        // Search in all name fields (first, last, display name)
+        final firstName = contact.name.first.toLowerCase();
+        final lastName = contact.name.last.toLowerCase();
+        final displayName = contact.displayName.toLowerCase();
+        final fullName = '$firstName $lastName'.trim().toLowerCase();
+        
+        // Search in phone numbers
         final phone = _contactsCacheService.getContactPhone(contact);
         final displayPhone = phone.isNotEmpty ? '0$phone' : '';
-        return name.contains(lowerQuery) || 
+        
+        // Check all phone numbers for the contact
+        final allPhones = contact.phones.map((p) => p.number.replaceAll(RegExp(r'\D'), '')).toList();
+        final allPhonesString = allPhones.join(' ');
+        
+        return firstName.contains(lowerQuery) || 
+               lastName.contains(lowerQuery) ||
+               displayName.contains(lowerQuery) ||
+               fullName.contains(lowerQuery) ||
                displayPhone.contains(lowerQuery) ||
-               phone.contains(lowerQuery);
+               phone.contains(lowerQuery) ||
+               allPhonesString.contains(lowerQuery);
       }).toList();
     });
   }
@@ -388,6 +448,210 @@ class _CreateContractScreenState extends State<CreateContractScreen>
           message: 'Error opening WhatsApp: $e',
           type: SnackBarType.error,
         );
+      }
+    }
+  }
+
+  Future<void> _showAddContactDialog() async {
+    _addContactNameController.clear();
+    _addContactPhoneController.clear();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF16A34A).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Iconsax.add,
+                color: Color(0xFF16A34A),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Add Contact',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(
+              controller: _addContactNameController,
+              label: 'Name',
+              hint: 'Enter contact name',
+              prefixIcon: const Icon(Iconsax.user, color: Colors.grey),
+              textInputAction: TextInputAction.next,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _addContactPhoneController,
+              label: 'Phone Number',
+              hint: '0XXXXXXXXX',
+              prefixIcon: const Icon(Iconsax.call, color: Colors.grey),
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _isAddingContact ? null : _addContact,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: _isAddingContact
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    'Add',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addContact() async {
+    final name = _addContactNameController.text.trim();
+    final phone = _addContactPhoneController.text.trim();
+
+    if (name.isEmpty) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Please enter a name',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    if (phone.isEmpty) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Please enter a phone number',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    // Validate phone number format (should be 9-10 digits)
+    final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
+    if (phoneDigits.length < 9 || phoneDigits.length > 10) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Please enter a valid phone number',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    setState(() {
+      _isAddingContact = true;
+    });
+
+    try {
+      // Request write contacts permission
+      final permission = await Permission.contacts.request();
+      if (permission.isDenied || permission.isPermanentlyDenied) {
+        if (mounted) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Contacts permission is required to add contacts',
+            type: SnackBarType.error,
+          );
+        }
+        setState(() {
+          _isAddingContact = false;
+        });
+        return;
+      }
+
+      // Format phone number
+      String formattedPhone = phoneDigits;
+      if (formattedPhone.length == 9) {
+        formattedPhone = '0$formattedPhone';
+      } else if (formattedPhone.startsWith('255')) {
+        formattedPhone = '0${formattedPhone.substring(3)}';
+      }
+
+      // Create new contact
+      final newContact = Contact(
+        name: Name(first: name),
+        phones: [Phone(formattedPhone)],
+      );
+
+      // Insert contact to device
+      await FlutterContacts.insertContact(newContact);
+
+      // Refresh contacts
+      await _refreshContacts();
+
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        CustomSnackBar.show(
+          context: context,
+          message: 'Contact added successfully',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackBar.show(
+          context: context,
+          message: 'Error adding contact: $e',
+          type: SnackBarType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingContact = false;
+        });
       }
     }
   }
@@ -620,7 +884,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _showContactsBottomSheet,
+                          onPressed: _isLoadingContactsForButton ? null : _showContactsBottomSheet,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
@@ -631,10 +895,19 @@ class _CreateContractScreenState extends State<CreateContractScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          icon: const Icon(Iconsax.people, size: 18),
-                          label: const Text(
-                            'Select Contact',
-                            style: TextStyle(
+                          icon: _isLoadingContactsForButton
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CupertinoActivityIndicator(
+                                    radius: 9,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Iconsax.people, size: 18),
+                          label: Text(
+                            _isLoadingContactsForButton ? 'Loading Contacts...' : 'Select Contact',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
