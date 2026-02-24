@@ -7,6 +7,7 @@ enum ContractType {
 
 enum BudgetContractStatus {
   active,
+  inProgress, // Partially funded, not yet fully funded
   sahara, // Completed/closed state
   unfunded,
 }
@@ -58,6 +59,8 @@ class BudgetContractModel {
     switch (status) {
       case BudgetContractStatus.active:
         return Colors.green;
+      case BudgetContractStatus.inProgress:
+        return Colors.orange;
       case BudgetContractStatus.sahara:
         return Colors.blue;
       case BudgetContractStatus.unfunded:
@@ -69,6 +72,8 @@ class BudgetContractModel {
     switch (status) {
       case BudgetContractStatus.active:
         return 'Active';
+      case BudgetContractStatus.inProgress:
+        return 'In Progress';
       case BudgetContractStatus.sahara:
         return 'Sahara';
       case BudgetContractStatus.unfunded:
@@ -112,10 +117,21 @@ class BudgetContractModel {
         (e) => e.name == map['contractType'],
         orElse: () => ContractType.negotiable,
       ),
-      status: BudgetContractStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => BudgetContractStatus.unfunded,
-      ),
+      status: () {
+        final s = map['status'];
+        if (s == 'inProgress' || s == 'in_progress') return BudgetContractStatus.inProgress;
+        final parsed = BudgetContractStatus.values.firstWhere(
+          (e) => e.name == map['status'],
+          orElse: () => BudgetContractStatus.unfunded,
+        );
+        // Backward compatibility: partially funded but stored as unfunded → show as inProgress
+        if (parsed == BudgetContractStatus.unfunded) {
+          final amt = (map['amount'] as num?)?.toDouble();
+          final funded = (map['fundedAmount'] as num?)?.toDouble() ?? 0.0;
+          if (amt != null && funded > 0 && funded < amt) return BudgetContractStatus.inProgress;
+        }
+        return parsed;
+      }(),
       createdAt: DateTime.parse(map['createdAt'] as String),
       contractEndDate: map['contractEndDate'] != null
           ? DateTime.parse(map['contractEndDate'] as String)

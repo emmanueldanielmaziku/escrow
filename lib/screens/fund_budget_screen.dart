@@ -31,6 +31,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   bool _showOverlay = false;
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
+  bool _isFullyFunded = false;
 
   final _budgetService = BudgetContractService();
 
@@ -194,9 +195,13 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
         final budget = await _budgetService.getBudgetContractDetails(widget.budget.id);
 
         if (budget?.status == BudgetContractStatus.active ||
+            budget?.status == BudgetContractStatus.inProgress ||
             (budget != null && budget.fundedAmount > widget.budget.fundedAmount)) {
           if (mounted) {
-            setState(() => _isSuccess = true);
+            setState(() {
+              _isSuccess = true;
+              _isFullyFunded = budget?.status == BudgetContractStatus.active;
+            });
             await Future.delayed(const Duration(seconds: 2));
             if (mounted) {
               setState(() => _showOverlay = false);
@@ -255,7 +260,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Budget is now active',
+                  _isFullyFunded ? 'Budget is now active' : 'Deposit successful',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 13,

@@ -35,9 +35,9 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   bool _isInitiating = false;
   bool _isSuccess = false;
 
-  // Color scheme — orange/amber to distinguish withdrawal from deposit (green)
-  static const Color _primaryColor = Color(0xFFE65100); // deep orange
-  static const Color _primaryLight = Color(0xFFF57C00);
+  // Color scheme — green
+  static const Color _primaryColor = Color(0xFF2E7D32);
+  static const Color _primaryLight = Color(0xFF388E3C);
 
   final Map<String, Map<String, String>> _paymentProviders = {
     'Mix by Yas': {

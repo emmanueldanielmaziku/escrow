@@ -90,7 +90,9 @@ class BudgetContractService {
       final contracts = snapshot.docs
           .map((doc) {
             try {
-              return BudgetContractModel.fromMap(doc.data());
+              final data = Map<String, dynamic>.from(doc.data());
+              data['id'] ??= doc.id; // ensure id is set when missing from payload
+              return BudgetContractModel.fromMap(data);
             } catch (e) {
               if (kDebugMode) {
                 print('❌ BUDGET SERVICE: Error parsing document ${doc.id}: $e');
@@ -117,7 +119,9 @@ class BudgetContractService {
       final doc =
           await _firestore.collection('budget_contracts').doc(contractId).get();
       if (!doc.exists) return null;
-      return BudgetContractModel.fromMap(doc.data()!);
+      final data = Map<String, dynamic>.from(doc.data()!);
+      data['id'] ??= doc.id;
+      return BudgetContractModel.fromMap(data);
     } catch (e) {
       throw Exception('Failed to get budget contract details: $e');
     }
