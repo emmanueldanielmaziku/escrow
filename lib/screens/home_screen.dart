@@ -325,14 +325,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Mai sahara',
+                              'Smart Contracts',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontSize: 14.0,
                                 color: Colors.white.withOpacity(0.8),
                               ),
                             ),
                             Text(
-                              'Contracts',
+                              'Mai Escrow',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 color: Colors.white,
                                 fontSize: 20.0,

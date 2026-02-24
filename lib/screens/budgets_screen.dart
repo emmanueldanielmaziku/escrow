@@ -267,7 +267,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Mai sahara',
+                                'Budgeting Feature',
                                     style:
                                         theme.textTheme.titleMedium?.copyWith(
                                   fontSize: 14.0,
@@ -275,7 +275,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 ),
                               ),
                               Text(
-                                'Budgeting feature',
+                                'Mai Sahara',
                                     style:
                                         theme.textTheme.headlineSmall?.copyWith(
                                   color: Colors.white,

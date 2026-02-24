@@ -412,15 +412,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final activeContracts = contracts
                               .where((c) => c.status.toLowerCase() == 'active')
                               .length;
+                          // Count as active: in progress or not yet closed (exclude sahara/closed)
                           final activeBudgets = budgets
                               .where((b) =>
-                                  b.status == BudgetContractStatus.active)
+                                  b.status != BudgetContractStatus.sahara)
                               .length;
-                          final depositedAmount = budgets.fold<double>(
-                              0.0, (sum, b) => sum + b.fundedAmount);
-                          // Withdrawn amount - currently not tracked in model, showing as 0
-                          // TODO: Add withdrawnAmount field to BudgetContractModel
-                          final withdrawnAmount = 0.0;
 
                           return Column(
                             children: [
@@ -443,32 +439,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       activeBudgets.toString(),
                                       Iconsax.wallet_3,
                                       Colors.blue,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildStatCardWithSummary(
-                                      context,
-                                      'Deposited Amount',
-                                      'TSh ${depositedAmount.toStringAsFixed(0)}',
-                                      'Total funds deposited',
-                                      Iconsax.money_recive,
-                                      Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _buildStatCardWithSummary(
-                                      context,
-                                      'Withdrawn Amount',
-                                      'TSh ${withdrawnAmount.toStringAsFixed(0)}',
-                                      'Total funds withdrawn',
-                                      Iconsax.money_send,
-                                      Colors.orange,
                                     ),
                                   ),
                                 ],
@@ -760,74 +730,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fontSize: 12,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCardWithSummary(
-    BuildContext context,
-    String label,
-    String value,
-    String summary,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            summary,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w400,
             ),
           ),
         ],
