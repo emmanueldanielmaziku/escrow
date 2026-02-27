@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/update_service.dart';
 import '../providers/user_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,6 +22,11 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       // Add a small delay to show the splash screen
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      // Check for Play Store updates before proceeding
+      await UpdateService.checkForUpdate(context);
 
       if (!mounted) return;
 
