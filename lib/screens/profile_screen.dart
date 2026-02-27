@@ -404,28 +404,7 @@ class ProfileScreen extends StatelessWidget {
                           );
                         },
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSection(
-                    context,
-                    'Account Settings',
-                    [
-                      _buildProfileItem(
-                        context,
-                        'Delete Account',
-                        'Permanently delete your account',
-                        Iconsax.trash,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const DeleteAccountWebView(),
-                            ),
-                          );
-                        },
-                      ),
+                      _buildAdvancedExpansion(context),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -532,6 +511,139 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedExpansion(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        childrenPadding: EdgeInsets.zero,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Iconsax.setting_2,
+            color: Colors.green,
+            size: 20,
+          ),
+        ),
+        title: const Text(
+          'Advanced',
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          'More account options',
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+        ),
+        iconColor: Colors.grey,
+        collapsedIconColor: Colors.grey,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: Colors.red.withOpacity(0.25), width: 1),
+            ),
+            child: ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Iconsax.trash, color: Colors.red, size: 20),
+              ),
+              title: const Text(
+                'Delete Account',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+              subtitle: Text(
+                'Permanently removes all your data',
+                style:
+                    TextStyle(color: Colors.red.withOpacity(0.7), fontSize: 13),
+              ),
+              trailing: const Icon(Iconsax.arrow_right_3,
+                  size: 20, color: Colors.red),
+              onTap: () => _confirmDeleteAccount(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void _confirmDeleteAccount(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Iconsax.trash, color: Colors.red, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Delete Account',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This action is irreversible. All your contracts, transactions, and personal data will be permanently deleted.\n\nAre you absolutely sure you want to continue?',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DeleteAccountWebView(),
+                ),
+              );
+            },
+            child: const Text('Yes, Delete'),
           ),
         ],
       ),

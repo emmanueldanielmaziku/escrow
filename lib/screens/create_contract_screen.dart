@@ -426,7 +426,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
     // Format phone number for WhatsApp (Tanzania: 255XXXXXXXXX)
     final whatsappPhone = '255$phone';
     final whatsappUrl =
-        'https://wa.me/$whatsappPhone?text=${Uri.encodeComponent('Hi! Join me on Mai Escrow to create secure contracts together. Download the app now!')}';
+        'https://wa.me/$whatsappPhone?text=${Uri.encodeComponent('Hi! Join me on Mai Escrow to create secure contracts together. Download the app now!\n\n📱 Android: https://play.google.com/store/apps/details?id=com.app.escrow\n🍎 iOS: https://apps.apple.com/us/app/mai-escrow/id6755103597')}';
 
     try {
       final uri = Uri.parse(whatsappUrl);
