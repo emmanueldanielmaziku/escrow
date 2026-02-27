@@ -73,6 +73,6 @@ flutter {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    // kotlin-stdlib-jdk8 is bundled automatically by KGP 2.x
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }

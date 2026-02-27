@@ -3,6 +3,16 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // Force all subprojects to use the same Kotlin stdlib version as the KGP
+    // to prevent "incompatible metadata version" errors from transitive deps.
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlin") {
+                useVersion("2.1.0")
+            }
+        }
+    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
