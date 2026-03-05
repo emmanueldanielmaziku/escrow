@@ -1,5 +1,4 @@
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import '../models/user_model.dart';
 import 'user_service.dart';
@@ -72,27 +71,23 @@ class ContactsCacheService {
     _loadingCompleter = Completer<void>();
 
     try {
-      // Request contacts permission
-      final permission = await Permission.contacts.request();
+      // Request contacts permission using flutter_contacts (shows system popup)
+      final hasPermission = await FlutterContacts.requestPermission();
 
-      var contactsWithPhones = <Contact>[];
-
-      if (permission.isGranted) {
-        // Load contacts from device (optimized: only get essential properties)
-        final contacts = await FlutterContacts.getContacts(
-          withProperties: true,
-          withThumbnail: false,
-        );
-
-        // Filter contacts with phone numbers (no limit - load all contacts)
-        contactsWithPhones =
-            contacts.where((contact) => contact.phones.isNotEmpty).toList();
+      if (!hasPermission) {
+        // Explicitly fail when permission is not granted so UI can show a proper message
+        throw Exception('Contacts permission was denied');
       }
 
-      // If no contacts found (e.g., in emulator or permission denied), add mock contacts for testing
-      if (contactsWithPhones.isEmpty) {
-        contactsWithPhones = _generateMockContacts();
-      }
+      // Load contacts from device (optimized: only get essential properties)
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withThumbnail: false,
+      );
+
+      // Filter contacts with phone numbers (no limit - load all contacts)
+      final contactsWithPhones =
+          contacts.where((contact) => contact.phones.isNotEmpty).toList();
 
       // Normalize phone numbers
       final phoneNumbers = contactsWithPhones
@@ -239,46 +234,4 @@ class ContactsCacheService {
     return false;
   }
 
-  // Generate mock contacts for testing (emulator)
-  List<Contact> _generateMockContacts() {
-    final mockContacts = <Contact>[];
-
-    // Mock contact names
-    final names = [
-      'John Doe',
-      'Jane Smith',
-      'Michael Johnson',
-      'Sarah Williams',
-      'David Brown',
-      'Emily Davis',
-      'Robert Wilson',
-      'Lisa Anderson',
-      'James Taylor',
-      'Maria Garcia',
-      'William Martinez',
-      'Jennifer Lee',
-      'Richard Thompson',
-      'Patricia White',
-      'Charles Harris',
-    ];
-
-    // Generate random phone numbers (Tanzanian format: 0XXXXXXXXX)
-    final random = DateTime.now().millisecondsSinceEpoch;
-    for (var i = 0; i < names.length; i++) {
-      // Generate a 9-digit phone number
-      final phoneSuffix = ((random + i) % 900000000 + 100000000).toString();
-      final phoneNumber = '0$phoneSuffix';
-
-      // Create mock contact
-      final contact = Contact(
-        id: 'mock_$i',
-        name: Name(first: names[i]),
-        phones: [Phone(phoneNumber)],
-      );
-
-      mockContacts.add(contact);
-    }
-
-    return mockContacts;
-  }
 }
