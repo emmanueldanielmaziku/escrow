@@ -11,7 +11,7 @@ class PaymentService {
     required String beneficiaryId,
     required String currency,
     required String msisdn,
-    required String channel,
+    String? channel,
     required String narration,
   }) async {
     try {
@@ -22,7 +22,7 @@ class PaymentService {
         'initiatorId': initiatorId,
         'currency': currency,
         'msisdn': msisdn,
-        'channel': channel,
+        if (channel != null) 'channel': channel,
         'narration': narration,
       };
 

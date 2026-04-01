@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/update_service.dart';
 import '../providers/user_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -33,27 +34,28 @@ class _SplashScreenState extends State<SplashScreen> {
       final authService = Provider.of<AuthService>(context, listen: false);
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-      // First check if user is logged in from SharedPreferences
-      final isLoggedIn = await authService.checkLoginStatus();
+      // Prefer FirebaseAuth as the source of truth for session persistence.
+      // SharedPreferences can get out of sync and should not force sign-out.
+      final firebaseUser = FirebaseAuth.instance.currentUser ??
+          await FirebaseAuth.instance.authStateChanges().first;
 
-      if (isLoggedIn) {
-        // Try to get stored user data first
+      if (firebaseUser != null) {
+        // Warm UI with cached profile immediately.
         final storedUser = await authService.getStoredUserData();
         if (storedUser != null) {
-          // Set the stored user data in the provider
           userProvider.setUser(storedUser);
-
-          // Verify the user data with Firestore
-          final currentUser = await authService.getCurrentUser();
-          if (currentUser != null) {
-            // Update provider with fresh data from Firestore
-            userProvider.setUser(currentUser);
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/home');
-            }
-            return;
-          }
         }
+
+        // Try to refresh from Firestore; if it fails (offline), keep cached user.
+        final freshUser = await authService.getCurrentUser();
+        if (freshUser != null) {
+          userProvider.setUser(freshUser);
+        }
+
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+        return;
       }
 
       if (mounted) {

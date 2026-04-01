@@ -27,6 +27,8 @@ class AuthService {
 
       final doc = await _firestore.collection('users').doc(userId).get();
       if (!doc.exists) {
+        // The Firebase user exists but their Firestore profile is missing.
+        // This is not recoverable in-app, so we sign out.
         await signOut();
         return null;
       }
@@ -39,7 +41,8 @@ class AuthService {
       return userData;
     } catch (e) {
       print('Error getting current user: $e');
-      await signOut();
+      // Do NOT sign out on transient errors (offline, timeouts, Firestore hiccups).
+      // Signing out here clears local login state and forces re-auth on next launch.
       return null;
     }
   }

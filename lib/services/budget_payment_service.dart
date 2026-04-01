@@ -15,7 +15,7 @@ class BudgetPaymentService {
     required double amount,
     required String ownerId,
     required String msisdn,
-    required String channel,
+    String? channel,
     String? narration,
   }) async {
     final url = '${AppConstants.baseUrl}/api/budget-payments/initiate';
@@ -27,7 +27,7 @@ class BudgetPaymentService {
       'budgetId': budgetId,
       'amount': amount,
       'msisdn': msisdn,
-      'channel': channel,
+      if (channel != null) 'channel': channel,
       if (narration != null) 'narration': narration,
     };
 
@@ -63,9 +63,11 @@ class BudgetPaymentService {
     required String budgetId,
     required double amount,
     required String ownerId,
-    required String msisdn,
+    String msisdn = '',
     required String channel,
     required String recipientName,
+    String? recipientBank,
+    String? recipientAccount,
     String? narration,
   }) async {
     final url = '${AppConstants.baseUrl}/api/budget-payouts/initiate';
@@ -79,6 +81,8 @@ class BudgetPaymentService {
       'msisdn': msisdn,
       'channel': channel,
       'recipientName': recipientName,
+      if (recipientBank != null) 'recipient_bank': recipientBank,
+      if (recipientAccount != null) 'recipient_account': recipientAccount,
       if (narration != null) 'narration': narration,
     };
 

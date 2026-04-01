@@ -27,24 +27,12 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   final _phoneFocusNode = FocusNode();
   final _amountController = TextEditingController();
   final _amountFocusNode = FocusNode();
-  String? _selectedProvider;
   bool _showOverlay = false;
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
   bool _isFullyFunded = false;
 
   final _budgetService = BudgetContractService();
-
-  final Map<String, Map<String, String>> _paymentProviders = {
-    'Mix by Yas': {
-      'channel': 'TZ-TIGO-C2B',
-      'logo': 'assets/icons/mixx.png',
-    },
-    'Airtel Money': {
-      'channel': 'TZ-AIRTEL-C2B',
-      'logo': 'assets/icons/airtel.png',
-    },
-  };
 
   @override
   void initState() {
@@ -85,15 +73,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   }
 
   Future<void> _handleSubmit() async {
-    if (_selectedProvider == null) {
-      CustomSnackBar.show(
-        context: context,
-        message: 'Please select a payment provider',
-        type: SnackBarType.error,
-      );
-      return;
-    }
-
     if (_phoneNumberController.text.isEmpty) {
       CustomSnackBar.show(
         context: context,
@@ -160,7 +139,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
         amount: amount,
         ownerId: user.id,
         msisdn: formattedMsisdn,
-        channel: _paymentProviders[_selectedProvider]!['channel']!,
         narration: 'Funding budget: ${widget.budget.title}',
       );
 
@@ -414,6 +392,53 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Supported networks (Snippe auto-routes by phone number)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2E7D32).withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF2E7D32).withOpacity(0.18),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Supported Networks',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: const [
+                                _NetworkChip(label: 'Airtel Money'),
+                                _NetworkChip(label: 'M-Pesa'),
+                                _NetworkChip(label: 'Mixx by Yas'),
+                                _NetworkChip(label: 'Halotel'),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'You will receive a USSD prompt to confirm the payment.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Amount Input Section
                       const Text(
                         'Amount to Add',
@@ -429,6 +454,15 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Deposit fee: 0.8% (charged at checkout)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -490,148 +524,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      // Section Title
-                      const Text(
-                        'Select Payment Method',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E7D32),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Choose your preferred payment provider',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Payment Provider Cards
-                      ..._paymentProviders.entries.map((entry) {
-                        final isSelected = _selectedProvider == entry.key;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedProvider = entry.key;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected ? Colors.white : Colors.grey[50],
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color(0xFF2E7D32)
-                                      : Colors.grey[300]!,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: const Color(0xFF2E7D32)
-                                              .withOpacity(0.1),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  // Radio Button
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? const Color(0xFF2E7D32)
-                                            : Colors.grey[400]!,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: isSelected
-                                        ? const Center(
-                                            child: Icon(
-                                              Icons.check_circle,
-                                              size: 16,
-                                              color: Color(0xFF2E7D32),
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 16),
-
-                                  // Provider Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          entry.key,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2E7D32),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Channel: ${entry.value['channel']}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Provider Logo
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.grey[200]!,
-                                      ),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        entry.value['logo']!,
-                                        scale: entry.value['logo'] ==
-                                                "assets/icons/mixx.png"
-                                            ? 12.0
-                                            : entry.value['logo'] ==
-                                                    "assets/icons/airtel.png"
-                                                ? 23.0
-                                                : 10.0,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-
-                      const SizedBox(height: 32),
-
                       // Phone Number Section
                       const Text(
                         'Phone Number',
@@ -794,6 +686,31 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
         ),
         if (_showOverlay) _buildOverlay(),
       ],
+    );
+  }
+}
+
+class _NetworkChip extends StatelessWidget {
+  final String label;
+  const _NetworkChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF2E7D32),
+        ),
+      ),
     );
   }
 }
