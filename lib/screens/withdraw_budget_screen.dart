@@ -33,7 +33,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   final _amountFocusNode = FocusNode();
 
   String _payoutMethod = 'mobile'; // 'mobile' | 'bank'
-  String? _selectedProvider;
   String? _selectedBankCode;
   bool _showOverlay = false;
   bool _isInitiating = false;
@@ -42,17 +41,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   // Color scheme — green
   static const Color _primaryColor = Color(0xFF2E7D32);
   static const Color _primaryLight = Color(0xFF388E3C);
-
-  final Map<String, Map<String, String>> _paymentProviders = {
-    'Mix by Yas': {
-      'channel': 'TZ-TIGO-B2C',
-      'logo': 'assets/icons/mixx.png',
-    },
-    'Airtel Money': {
-      'channel': 'TZ-AIRTEL-B2C',
-      'logo': 'assets/icons/airtel.png',
-    },
-  };
 
   // Snippe supported banks (code -> display name)
   static const Map<String, String> _banks = {
@@ -142,10 +130,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   // ──────────────────────────────────────────────
   Future<void> _handleSubmit() async {
     if (_payoutMethod == 'mobile') {
-      if (_selectedProvider == null) {
-        _snack('Please select a payment provider');
-        return;
-      }
       if (_phoneNumberController.text.trim().isEmpty) {
         _snack('Please enter your phone number');
         return;
@@ -206,9 +190,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
         amount: amount,
         ownerId: user.id,
         msisdn: msisdn,
-        channel: _payoutMethod == 'bank'
-            ? 'bank'
-            : _paymentProviders[_selectedProvider]!['channel']!,
+        channel: _payoutMethod == 'bank' ? 'bank' : 'mobile',
         recipientName: user.fullName.isNotEmpty ? user.fullName : 'Budget Owner',
         recipientBank: _payoutMethod == 'bank' ? _selectedBankCode : null,
         recipientAccount:
@@ -531,84 +513,12 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
                       // ── Provider selection ──
                       if (_payoutMethod == 'mobile') ...[
-                        const Text('Select Mobile Network',
+                        const Text('Supported Mobile Networks',
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
                         const SizedBox(height: 8),
-                        Text('Choose your mobile money network for payout',
+                        Text('Snippe auto-routes by phone number. Supported: Airtel Money, M-Pesa, Mixx by Yas, Halotel.',
                             style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 16),
-                        ..._paymentProviders.entries.map((entry) {
-                          final isSelected = _selectedProvider == entry.key;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              onTap: () => setState(() => _selectedProvider = entry.key),
-                              borderRadius: BorderRadius.circular(16),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white : Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected ? _primaryColor : Colors.grey[300]!,
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [BoxShadow(color: _primaryColor.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))]
-                                      : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 22,
-                                      height: 22,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? _primaryColor : Colors.grey[400]!,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: isSelected
-                                          ? const Center(child: Icon(Icons.check_circle, size: 14, color: _primaryColor))
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(entry.key,
-                                              style: const TextStyle(
-                                                  fontSize: 15, fontWeight: FontWeight.bold, color: _primaryColor)),
-                                          Text('Channel: ${entry.value['channel']}',
-                                              style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.grey[200]!),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.asset(
-                                          entry.value['logo']!,
-                                          scale: entry.value['logo'] == 'assets/icons/mixx.png' ? 12.0 : 23.0,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
+                        const SizedBox(height: 12),
                       ] else ...[
                         const Text('Select Bank',
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
@@ -617,12 +527,17 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                             style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
                           value: _selectedBankCode,
                           items: _banks.entries
                               .map(
                                 (e) => DropdownMenuItem(
                                   value: e.key,
-                                  child: Text('${e.key} — ${e.value}'),
+                                  child: Text(
+                                    '${e.key} — ${e.value}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               )
                               .toList(),

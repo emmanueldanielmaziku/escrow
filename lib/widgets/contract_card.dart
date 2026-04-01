@@ -55,7 +55,6 @@ class _ContractCardState extends State<ContractCard> {
 
   // Fund collection state
   String _payoutMethod = 'mobile'; // 'mobile' | 'bank'
-  String? _selectedNetwork;
   final TextEditingController _phoneController = TextEditingController();
   final FocusNode _phoneFocusNode = FocusNode();
   String? _selectedBankCode;
@@ -1208,33 +1207,19 @@ class _ContractCardState extends State<ContractCard> {
               // Network Selection
               if (_payoutMethod == 'mobile') ...[
                 const Text(
-                  'Select payment channel',
+                  'Supported Mobile Networks',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildNetworkOption(
-                        'Mix by Yas',
-                        'assets/icons/mixx.png',
-                        'mix',
-                        setModalState,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildNetworkOption(
-                        'Airtel Money',
-                        'assets/icons/airtel.png',
-                        'airtel',
-                        setModalState,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Snippe auto-routes by phone number. Supported: Airtel Money, M-Pesa, Mixx by Yas, Halotel.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(height: 24),
               ] else ...[
@@ -1247,12 +1232,17 @@ class _ContractCardState extends State<ContractCard> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   value: _selectedBankCode,
                   items: _banks.entries
                       .map(
                         (e) => DropdownMenuItem(
                           value: e.key,
-                          child: Text('${e.key} — ${e.value}'),
+                          child: Text(
+                            '${e.key} — ${e.value}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       )
                       .toList(),
@@ -1467,13 +1457,11 @@ class _ContractCardState extends State<ContractCard> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: (_payoutMethod == 'mobile'
-                                ? (_selectedNetwork != null &&
-                                    _phoneController.text.isNotEmpty)
+                                ? _phoneController.text.isNotEmpty
                                 : (_selectedBankCode != null &&
                                     _bankAccountController.text.trim().isNotEmpty))
                         ? () {
                             print('Transfer Funds button pressed');
-                            print('Selected network: $_selectedNetwork');
                             print('Phone text: ${_phoneController.text}');
                             _showTransferConfirmation(context, setModalState);
                           }
@@ -1497,64 +1485,6 @@ class _ContractCardState extends State<ContractCard> {
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNetworkOption(
-    String name,
-    String iconPath,
-    String value,
-    StateSetter setModalState,
-  ) {
-    final isSelected = _selectedNetwork == value;
-    return InkWell(
-      onTap: () {
-        setModalState(() {
-          _selectedNetwork = value;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.green.withOpacity(0.1) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  iconPath,
-                  scale: iconPath == "assets/icons/mixx.png" ? 12.0 : 23.0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.green : Colors.black,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
         ),
       ),
     );
@@ -1615,7 +1545,7 @@ class _ContractCardState extends State<ContractCard> {
   Widget _buildTransferConfirmation(StateSetter setModalState) {
     final detailsText = _payoutMethod == 'bank'
         ? '${_selectedBankCode ?? ''} • ${_bankAccountController.text}'
-        : '${_phoneController.text} (${_selectedNetwork == 'mix' ? 'Mix by Yas' : 'Airtel Money'})';
+        : _phoneController.text;
     return Column(
       children: [
         const SizedBox(height: 24),
@@ -1745,7 +1675,7 @@ class _ContractCardState extends State<ContractCard> {
             formattedMsisdn = '255$formattedMsisdn';
           }
         }
-        channel = _selectedNetwork == 'mix' ? 'TZ-TIGO-B2C' : 'TZ-AIRTEL-B2C';
+        channel = 'mobile';
       }
 
       // Prepare request body
