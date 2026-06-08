@@ -695,15 +695,15 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
     List<String> parts = [];
     if (_selectedContractDays > 0) {
       parts.add(
-          '${_selectedContractDays} ${_selectedContractDays == 1 ? 'day' : 'days'}');
+          '$_selectedContractDays ${_selectedContractDays == 1 ? 'day' : 'days'}');
     }
     if (_selectedContractHours > 0) {
       parts.add(
-          '${_selectedContractHours} ${_selectedContractHours == 1 ? 'hour' : 'hours'}');
+          '$_selectedContractHours ${_selectedContractHours == 1 ? 'hour' : 'hours'}');
     }
     if (_selectedContractMinutes > 0) {
       parts.add(
-          '${_selectedContractMinutes} ${_selectedContractMinutes == 1 ? 'minute' : 'minutes'}');
+          '$_selectedContractMinutes ${_selectedContractMinutes == 1 ? 'minute' : 'minutes'}');
     }
 
     return parts.join(', ');

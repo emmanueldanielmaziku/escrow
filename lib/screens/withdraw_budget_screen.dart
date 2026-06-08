@@ -7,6 +7,7 @@ import '../models/budget_contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
+import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
 
 class WithdrawBudgetScreen extends StatefulWidget {
@@ -27,13 +28,10 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
-  final _bankAccountController = TextEditingController();
-  final _bankAccountFocusNode = FocusNode();
   final _amountController = TextEditingController();
   final _amountFocusNode = FocusNode();
 
-  String _payoutMethod = 'mobile'; // 'mobile' | 'bank'
-  String? _selectedBankCode;
+  String _mobileProvider = 'Azampesa';
   bool _showOverlay = false;
   bool _isInitiating = false;
   bool _isSuccess = false;
@@ -43,66 +41,30 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   static const Color _primaryLight = Color(0xFF388E3C);
 
   // Snippe supported banks (code -> display name)
-  static const Map<String, String> _banks = {
-    'ABSA': 'ABSA BANK TANZANIA LTD',
-    'ACCESS': 'ACCESSBANK TANZANIA LTD',
-    'AKIBA': 'AKIBA COMMERCIAL BANK LTD',
-    'AMANA': 'AMANA BANK LIMITED',
-    'AZANIA': 'AZANIA BANK LIMITED',
-    'BANCABC': 'AFRICAN BANKING CORPORATION TANZANIA LIMITED',
-    'BARODA': 'BANK OF BARODA (TANZANIA) LTD',
-    'BOA': 'BANK OF AFRICA TANZANIA LIMITED',
-    'BOI': 'BANK OF INDIA (TANZANIA) LIMITED',
-    'CANARA': 'CANARA BANK TANZANIA LTD',
-    'CITI': 'CITIBANK TANZANIA LTD',
-    'CRDB': 'CRDB BANK PLC',
-    'DASHENG': 'CHINA DASHENG BANK LIMITED',
-    'DCB': 'DAR ES SALAAM COMMUNITY BANK LTD',
-    'DTB': 'DIAMOND TRUST BANK TANZANIA LTD',
-    'ECOBANK': 'ECOBANK TANZANIA LIMITED',
-    'EQUITY': 'EQUITY BANK TANZANIA LIMITED',
-    'EXIM': 'EXIM BANK (TANZANIA) LTD',
-    'FNB': 'FIRST NATIONAL BANK LIMITED',
-    'GT BANK': 'GUARANTY TRUST BANK (T) LTD',
-    'HABIB': 'HABIB AFRICAN BANK LIMITED',
-    'ICB': 'INTERNATIONAL COMMERCIAL BANK (TANZANIA) LIMITED',
-    'IMBANK': 'I&M BANK LIMITED',
-    'KCB': 'KCB BANK TANZANIA LIMITED',
-    'KILIMANJARO': 'KILIMANJARO CO-OPERATIVE BANK LTD',
-    'MAENDELEO': 'MAENDELEO BANK LTD',
-    'MKOMBOZI': 'MKOMBOZI COMMERCIAL BANK',
-    'MWALIMU': 'MWALIMU COMMERCIAL BANK PLC',
-    'MWANGA': 'MWANGA HAKIKA MICROFINANCE BANK LIMITED',
-    'NBC': 'NATIONAL BANK OF COMMERCE LTD',
-    'NCBA': 'NCBA BANK LIMITED',
-    'NMB': 'NATIONAL MICROFINANCE BANK LIMITED',
-    'PBZ': "PEOPLE'S BANK OF ZANZIBAR LTD",
-    'SCB': 'STANDARD CHARTERED BANK (T) LIMITED',
-    'SELCOMPESA': 'SELCOMPESA BANK LTD',
-    'STANBIC': 'STANBIC BANK TANZANIA LTD.',
-    'TCB': 'TANZANIA COMMERCIAL BANK PLC',
-    'UBA': 'UNITED BANK FOR AFRICA (T) LTD',
-    'UCHUMI': 'UCHUMI COMMERCIAL BANK (T) LTD',
-    'YETU': 'YETU MICROFINANCE BANK PLC',
+  static const Map<String, String> _mobileProviders = {
+    'Azampesa': 'Azampesa',
+    'TIGOPESA': 'Tigo Pesa',
+    'MPESA': 'M-Pesa',
+    'AIRTELMONEY': 'Airtel Money',
+    'HALOPESA': 'HaloPesa',
   };
+
+  double get _maxAmount => widget.budget.fundedAmount;
 
   @override
   void initState() {
     super.initState();
     // Default amount = full funded amount
-    _amountController.text = widget.budget.fundedAmount.toStringAsFixed(2);
+    _amountController.text = _maxAmount.toStringAsFixed(2);
 
     _amountFocusNode.addListener(() => setState(() {}));
     _phoneFocusNode.addListener(() => setState(() {}));
-    _bankAccountFocusNode.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _phoneNumberController.dispose();
     _phoneFocusNode.dispose();
-    _bankAccountController.dispose();
-    _bankAccountFocusNode.dispose();
     _amountController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
@@ -119,30 +81,13 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
     return v.toStringAsFixed(2);
   }
 
-  /// Estimated fee (mirrors backend flat withdrawal fee)
-  double _estimateFee(double amount) {
-    if (amount <= 0) return 0;
-    return 1500;
-  }
-
   // ──────────────────────────────────────────────
   //  Validation & submit
   // ──────────────────────────────────────────────
   Future<void> _handleSubmit() async {
-    if (_payoutMethod == 'mobile') {
-      if (_phoneNumberController.text.trim().isEmpty) {
-        _snack('Please enter your phone number');
-        return;
-      }
-    } else {
-      if (_selectedBankCode == null) {
-        _snack('Please select a bank');
-        return;
-      }
-      if (_bankAccountController.text.trim().isEmpty) {
-        _snack('Please enter the bank account number');
-        return;
-      }
+    if (_phoneNumberController.text.trim().isEmpty) {
+      _snack('Please enter your phone number');
+      return;
     }
 
     final amount = double.tryParse(_amountController.text.trim());
@@ -177,25 +122,40 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       final user = Provider.of<UserProvider>(context, listen: false).user;
       if (user == null) throw Exception('User not found');
 
-      String msisdn = '';
-      if (_payoutMethod == 'mobile') {
-        msisdn = _phoneNumberController.text.trim();
-        if (!msisdn.startsWith('255')) {
-          msisdn = msisdn.startsWith('0') ? '255${msisdn.substring(1)}' : '255$msisdn';
-        }
+      String msisdn = _phoneNumberController.text.trim();
+      if (!msisdn.startsWith('255')) {
+        msisdn = msisdn.startsWith('0') ? '255${msisdn.substring(1)}' : '255$msisdn';
       }
+      final provider = _mobileProvider;
+
+      final paymentService = PaymentService();
+      try {
+        final lookupResult = await paymentService.nameLookup(
+          accountNumber: msisdn,
+          provider: provider,
+          channel: 'mobile',
+          authToken: user.id,
+        );
+        final lookupData = lookupResult['data'] as Map<String, dynamic>?;
+        final lookupName = _extractLookupName(lookupData?['lookupResult']);
+        if (lookupName != null && mounted) {
+          CustomSnackBar.show(
+            context: context,
+            message: 'Recipient: $lookupName',
+            type: SnackBarType.success,
+          );
+        }
+      } catch (_) {}
 
       await _budgetPaymentService.initiateBudgetWithdrawal(
         budgetId: widget.budget.id,
         amount: amount,
         ownerId: user.id,
         msisdn: msisdn,
-        channel: _payoutMethod == 'bank' ? 'bank' : 'mobile',
+        channel: 'mobile',
         recipientName: user.fullName.isNotEmpty ? user.fullName : 'Budget Owner',
-        recipientBank: _payoutMethod == 'bank' ? _selectedBankCode : null,
-        recipientAccount:
-            _payoutMethod == 'bank' ? _bankAccountController.text.trim() : null,
         narration: 'Withdrawal from: ${widget.budget.title}',
+        provider: provider,
       );
 
       if (mounted) {
@@ -269,6 +229,16 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   String _formatDate(DateTime date) =>
       '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
+  String? _extractLookupName(dynamic lookupResult) {
+    if (lookupResult == null) return null;
+    if (lookupResult is Map) {
+      return lookupResult['name']?.toString() ??
+          lookupResult['accountName']?.toString() ??
+          lookupResult['fullName']?.toString();
+    }
+    return null;
+  }
+
   // ──────────────────────────────────────────────
   //  Overlay
   // ──────────────────────────────────────────────
@@ -320,9 +290,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   @override
   Widget build(BuildContext context) {
     final fundedAmount = widget.budget.fundedAmount;
-    final estimatedAmount = double.tryParse(_amountController.text.trim()) ?? fundedAmount;
-    final fee = _estimateFee(estimatedAmount);
-    final net = (estimatedAmount - fee).clamp(0.0, double.infinity);
 
     return Stack(
       children: [
@@ -390,21 +357,12 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         const Divider(height: 24),
-                        // Fee breakdown
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Withdrawal fee:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                            Text('- TSh ${fee.toStringAsFixed(0)}',
-                                style: const TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('You receive:', style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w600)),
-                            Text('TSh ${net.toStringAsFixed(0)}',
+                            Text('You will receive:', style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                            Text('TSh ${_getAmountDisplay()}',
                                 style: const TextStyle(fontSize: 13, color: _primaryColor, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -471,7 +429,19 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                         prefix: const Icon(Icons.attach_money, color: _primaryColor),
                         prefixText: 'TSh ',
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) {
+                          final parsed = double.tryParse(_amountController.text);
+                          if (parsed != null && parsed > _maxAmount) {
+                            _amountController.text =
+                                _maxAmount.toStringAsFixed(2);
+                            _amountController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                  offset: _amountController.text.length),
+                            );
+                          }
+                          setState(() {});
+                        },
                       ),
                       const SizedBox(height: 28),
 
@@ -486,143 +456,68 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Choose how you want to receive funds',
+                        'Funds will be sent to your mobile money',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _methodChip(
-                              label: 'Mobile Money',
-                              selected: _payoutMethod == 'mobile',
-                              onTap: () => setState(() => _payoutMethod = 'mobile'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _methodChip(
-                              label: 'Bank Transfer',
-                              selected: _payoutMethod == 'bank',
-                              onTap: () => setState(() => _payoutMethod = 'bank'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
                       // ── Provider selection ──
-                      if (_payoutMethod == 'mobile') ...[
-                        const Text('Supported Mobile Networks',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
-                        const SizedBox(height: 8),
-                        Text('Snippe auto-routes by phone number. Supported: Airtel Money, M-Pesa, Mixx by Yas, Halotel.',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 12),
-                      ] else ...[
-                        const Text('Select Bank',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
-                        const SizedBox(height: 8),
-                        Text('Choose the bank account to receive funds',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          value: _selectedBankCode,
-                          items: _banks.entries
-                              .map(
-                                (e) => DropdownMenuItem(
-                                  value: e.key,
-                                  child: Text(
-                                    '${e.key} — ${e.value}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) => setState(() => _selectedBankCode = v),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
+                      const Text('Mobile Provider',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
+                      const SizedBox(height: 8),
+                      Text('Select the mobile money provider',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: _mobileProvider,
+                        items: _mobileProviders.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _mobileProvider = v!),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
                           ),
                         ),
-                        if (_selectedBankCode == 'SELCOMPESA') ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _primaryColor.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _primaryColor.withOpacity(0.2)),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.info_outline, color: _primaryColor, size: 18),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    'Selcom bank disbursement is free.',
-                                    style: TextStyle(fontSize: 12, color: _primaryColor, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
 
                       const SizedBox(height: 28),
 
                       // ── Phone number ──
-                      if (_payoutMethod == 'mobile') ...[
-                        const Text('Phone Number',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
-                        const SizedBox(height: 8),
-                        Text('Enter the phone number to receive funds',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 12),
-                        _buildInputField(
-                          controller: _phoneNumberController,
-                          focusNode: _phoneFocusNode,
-                          hint: '0758376759',
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          prefix: const Icon(Icons.phone_outlined, color: _primaryColor),
-                          trailing: IconButton(
-                            onPressed: () async {
-                              final data = await Clipboard.getData(Clipboard.kTextPlain);
-                              if (data?.text != null) {
-                                _phoneNumberController.text = data!.text!;
-                                setState(() {});
-                              }
-                            },
-                            icon: const Icon(Icons.paste_outlined, color: _primaryColor),
-                            tooltip: 'Paste',
-                          ),
-                          onChanged: (_) => setState(() {}),
+                      const Text('Phone Number',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
+                      const SizedBox(height: 8),
+                      Text('Enter the phone number to receive funds',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      const SizedBox(height: 12),
+                      _buildInputField(
+                        controller: _phoneNumberController,
+                        focusNode: _phoneFocusNode,
+                        hint: '0758376759',
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        prefix: const Icon(Icons.phone_outlined, color: _primaryColor),
+                        trailing: IconButton(
+                          onPressed: () async {
+                            final data = await Clipboard.getData(Clipboard.kTextPlain);
+                            if (data?.text != null) {
+                              _phoneNumberController.text = data!.text!;
+                              setState(() {});
+                            }
+                          },
+                          icon: const Icon(Icons.paste_outlined, color: _primaryColor),
+                          tooltip: 'Paste',
                         ),
-                      ] else ...[
-                        const Text('Bank Account Number',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
-                        const SizedBox(height: 8),
-                        Text('Enter the bank account number to receive funds',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                        const SizedBox(height: 12),
-                        _buildInputField(
-                          controller: _bankAccountController,
-                          focusNode: _bankAccountFocusNode,
-                          hint: '0200000000',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          prefix: const Icon(Icons.account_balance, color: _primaryColor),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ],
+                        onChanged: (_) => setState(() {}),
+                      ),
 
                       const SizedBox(height: 32),
 
@@ -718,46 +613,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
           ),
           if (trailing != null) trailing,
         ],
-      ),
-    );
-  }
-
-  Widget _methodChip({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? _primaryColor.withOpacity(0.12) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? _primaryColor : Colors.grey[300]!,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: selected ? _primaryColor : Colors.grey[800],
-              fontSize: 13,
-            ),
-          ),
-        ),
       ),
     );
   }

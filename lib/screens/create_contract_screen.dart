@@ -39,7 +39,7 @@ class _CreateContractScreenState extends State<CreateContractScreen>
   bool _isLoadingContactsForButton = false;
   // Left for future use when we bring back inline add-contact UI
   // ignore: unused_field
-  bool _isAddingContact = false;
+  final bool _isAddingContact = false;
   final _contractService = ContractService();
   final _contactsCacheService = ContactsCacheService();
   UserModel? _selectedSecondParticipant;

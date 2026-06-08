@@ -34,12 +34,12 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
 
   final _budgetService = BudgetContractService();
 
+  double get _maxAmount => widget.budget.amount - widget.budget.fundedAmount;
+
   @override
   void initState() {
     super.initState();
-    // Set default amount to remaining amount needed
-    final remainingAmount = widget.budget.amount - widget.budget.fundedAmount;
-    _amountController.text = remainingAmount.toStringAsFixed(2);
+    _amountController.text = _maxAmount.toStringAsFixed(2);
   }
 
   @override
@@ -392,7 +392,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Supported networks (Snippe auto-routes by phone number)
+                      // Azampesa-only payment banner
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
@@ -403,34 +403,42 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                             color: const Color(0xFF2E7D32).withOpacity(0.18),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            const Text(
-                              'Supported Networks',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF2E7D32),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E7D32),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.phone_android_rounded,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: const [
-                                _NetworkChip(label: 'Airtel Money'),
-                                _NetworkChip(label: 'M-Pesa'),
-                                _NetworkChip(label: 'Mixx by Yas'),
-                                _NetworkChip(label: 'Halotel'),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'You will receive a USSD prompt to confirm the payment.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Azampesa',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2E7D32),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'You will receive a USSD push to confirm payment.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -505,6 +513,16 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                             setState(() {});
                           },
                           onChanged: (value) {
+                            final parsed = double.tryParse(value);
+                            if (parsed != null && parsed > _maxAmount) {
+                              _amountController.text =
+                                  _maxAmount.toStringAsFixed(2);
+                              _amountController.selection =
+                                  TextSelection.fromPosition(
+                                TextPosition(
+                                    offset: _amountController.text.length),
+                              );
+                            }
                             setState(() {});
                           },
                           decoration: const InputDecoration(
@@ -598,7 +616,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                                   border: InputBorder.none,
                                   prefixIcon: Icon(
                                     Icons.phone_outlined,
-                                    color: const Color(0xFF2E7D32),
+                                    color: Color(0xFF2E7D32),
                                   ),
                                 ),
                               ),
@@ -689,29 +707,3 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     );
   }
 }
-
-class _NetworkChip extends StatelessWidget {
-  final String label;
-  const _NetworkChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF2E7D32),
-        ),
-      ),
-    );
-  }
-}
-

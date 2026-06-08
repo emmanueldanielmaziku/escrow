@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'dart:ui';
 import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
-import '../services/deposit_service.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
@@ -25,7 +24,6 @@ class FundContractScreen extends StatefulWidget {
 }
 
 class _FundContractScreenState extends State<FundContractScreen> {
-  final _depositService = DepositService();
   final _paymentService = PaymentService();
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
@@ -101,24 +99,14 @@ class _FundContractScreenState extends State<FundContractScreen> {
       await _paymentService.initiatePayment(
         contractId: widget.contract.id,
         amount: widget.contract.reward,
-        initiatorId: user.id, // Remitter's Firebase ID
+        initiatorId: user.id,
         beneficiaryId: widget.contract.beneficiaryId ?? '',
         currency: 'TZS',
         msisdn: formattedMsisdn,
         narration: 'Payment for contract ${widget.contract.id}',
       );
 
-      // Create deposit record
-      await _depositService.createDeposit(
-        contractId: widget.contract.id,
-        userId: user.id,
-        provider: 'mobile',
-        contractFund: widget.contract.reward.toString(),
-        channel: 'mobile',
-        paymentMessage: _phoneNumberController.text,
-      );
-
-      // Payment initiated successfully, now monitor contract status
+      // Payment initiated — monitor Firestore for contract activation
       if (mounted) {
         setState(() {
           _isInitiatingPayment = false;
@@ -387,7 +375,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Supported networks (Snippe auto-routes by phone number)
+                      // Azampesa-only payment banner
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
@@ -398,34 +386,42 @@ class _FundContractScreenState extends State<FundContractScreen> {
                             color: const Color(0xFF2E7D32).withOpacity(0.18),
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            const Text(
-                              'Supported Networks',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF2E7D32),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E7D32),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.phone_android_rounded,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: const [
-                                _NetworkChip(label: 'Airtel Money'),
-                                _NetworkChip(label: 'M-Pesa'),
-                                _NetworkChip(label: 'Mixx by Yas'),
-                                _NetworkChip(label: 'Halotel'),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'You will receive a USSD prompt to confirm the payment.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Azampesa',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2E7D32),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'You will receive a USSD push to confirm payment.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -596,31 +592,6 @@ class _FundContractScreenState extends State<FundContractScreen> {
         ),
         if (_showOverlay) _buildOverlay(),
       ],
-    );
-  }
-}
-
-class _NetworkChip extends StatelessWidget {
-  final String label;
-  const _NetworkChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF2E7D32),
-        ),
-      ),
     );
   }
 }

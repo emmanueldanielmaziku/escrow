@@ -14,6 +14,7 @@ import '../models/contract_model.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
+import '../services/payment_service.dart';
 import 'contract_summary_bottom_sheet.dart';
 
 class ContractCard extends StatefulWidget {
@@ -54,57 +55,18 @@ class _ContractCardState extends State<ContractCard> {
       TextEditingController();
 
   // Fund collection state
-  String _payoutMethod = 'mobile'; // 'mobile' | 'bank'
+  String _mobileProvider = 'Azampesa';
   final TextEditingController _phoneController = TextEditingController();
   final FocusNode _phoneFocusNode = FocusNode();
-  String? _selectedBankCode;
-  final TextEditingController _bankAccountController = TextEditingController();
-  final FocusNode _bankAccountFocusNode = FocusNode();
   bool _showConfirmation = false;
   bool _isTransferring = false;
 
-  // Snippe supported banks (code -> display name)
-  static const Map<String, String> _banks = {
-    'ABSA': 'ABSA BANK TANZANIA LTD',
-    'ACCESS': 'ACCESSBANK TANZANIA LTD',
-    'AKIBA': 'AKIBA COMMERCIAL BANK LTD',
-    'AMANA': 'AMANA BANK LIMITED',
-    'AZANIA': 'AZANIA BANK LIMITED',
-    'BANCABC': 'AFRICAN BANKING CORPORATION TANZANIA LIMITED',
-    'BARODA': 'BANK OF BARODA (TANZANIA) LTD',
-    'BOA': 'BANK OF AFRICA TANZANIA LIMITED',
-    'BOI': 'BANK OF INDIA (TANZANIA) LIMITED',
-    'CANARA': 'CANARA BANK TANZANIA LTD',
-    'CITI': 'CITIBANK TANZANIA LTD',
-    'CRDB': 'CRDB BANK PLC',
-    'DASHENG': 'CHINA DASHENG BANK LIMITED',
-    'DCB': 'DAR ES SALAAM COMMUNITY BANK LTD',
-    'DTB': 'DIAMOND TRUST BANK TANZANIA LTD',
-    'ECOBANK': 'ECOBANK TANZANIA LIMITED',
-    'EQUITY': 'EQUITY BANK TANZANIA LIMITED',
-    'EXIM': 'EXIM BANK (TANZANIA) LTD',
-    'FNB': 'FIRST NATIONAL BANK LIMITED',
-    'GT BANK': 'GUARANTY TRUST BANK (T) LTD',
-    'HABIB': 'HABIB AFRICAN BANK LIMITED',
-    'ICB': 'INTERNATIONAL COMMERCIAL BANK (TANZANIA) LIMITED',
-    'IMBANK': 'I&M BANK LIMITED',
-    'KCB': 'KCB BANK TANZANIA LIMITED',
-    'KILIMANJARO': 'KILIMANJARO CO-OPERATIVE BANK LTD',
-    'MAENDELEO': 'MAENDELEO BANK LTD',
-    'MKOMBOZI': 'MKOMBOZI COMMERCIAL BANK',
-    'MWALIMU': 'MWALIMU COMMERCIAL BANK PLC',
-    'MWANGA': 'MWANGA HAKIKA MICROFINANCE BANK LIMITED',
-    'NBC': 'NATIONAL BANK OF COMMERCE LTD',
-    'NCBA': 'NCBA BANK LIMITED',
-    'NMB': 'NATIONAL MICROFINANCE BANK LIMITED',
-    'PBZ': "PEOPLE'S BANK OF ZANZIBAR LTD",
-    'SCB': 'STANDARD CHARTERED BANK (T) LIMITED',
-    'SELCOMPESA': 'SELCOMPESA BANK LTD',
-    'STANBIC': 'STANBIC BANK TANZANIA LTD.',
-    'TCB': 'TANZANIA COMMERCIAL BANK PLC',
-    'UBA': 'UNITED BANK FOR AFRICA (T) LTD',
-    'UCHUMI': 'UCHUMI COMMERCIAL BANK (T) LTD',
-    'YETU': 'YETU MICROFINANCE BANK PLC',
+  static const Map<String, String> _mobileProviders = {
+    'Azampesa': 'Azampesa',
+    'TIGOPESA': 'Tigo Pesa',
+    'MPESA': 'M-Pesa',
+    'AIRTELMONEY': 'Airtel Money',
+    'HALOPESA': 'HaloPesa',
   };
 
   @override
@@ -119,8 +81,6 @@ class _ContractCardState extends State<ContractCard> {
     _terminationReasonController.dispose();
     _phoneController.dispose();
     _phoneFocusNode.dispose();
-    _bankAccountController.dispose();
-    _bankAccountFocusNode.dispose();
     super.dispose();
   }
 
@@ -1172,9 +1132,7 @@ class _ContractCardState extends State<ContractCard> {
               ),
               const SizedBox(height: 8),
               Text(
-                _payoutMethod == 'bank'
-                    ? 'Choose your bank and enter your account number'
-                    : 'Choose your preferred network and enter your phone number',
+                'Choose your preferred network and enter your phone number',
                 style: const TextStyle(
                   color: Colors.grey,
                   fontSize: 14,
@@ -1190,263 +1148,163 @@ class _ContractCardState extends State<ContractCard> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMethodOption('Mobile Money', 'mobile', setModalState),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMethodOption('Bank Transfer', 'bank', setModalState),
-                  ),
-                ],
+              const SizedBox(height: 8),
+              const Text(
+                'Funds will be sent to your mobile money',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
               const SizedBox(height: 24),
 
-              // Network Selection
-              if (_payoutMethod == 'mobile') ...[
-                const Text(
-                  'Supported Mobile Networks',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              // Provider Selection
+              const Text(
+                'Mobile Provider',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Snippe auto-routes by phone number. Supported: Airtel Money, M-Pesa, Mixx by Yas, Halotel.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ] else ...[
-                const Text(
-                  'Select bank',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  value: _selectedBankCode,
-                  items: _banks.entries
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e.key,
-                          child: Text(
-                            '${e.key} — ${e.value}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) {
-                    setModalState(() {
-                      _selectedBankCode = v;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                  ),
-                ),
-                if (_selectedBankCode == 'SELCOMPESA') ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF2E7D32).withOpacity(0.2),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                value: _mobileProvider,
+                items: _mobileProviders.entries
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e.key,
+                        child: Text(e.value),
                       ),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.info_outline,
-                            color: Color(0xFF2E7D32), size: 18),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Selcom bank disbursement is free.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  setModalState(() {
+                    _mobileProvider = v!;
+                  });
+                },
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
                   ),
-                ],
-                const SizedBox(height: 24),
-              ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // Phone Number Input
-              if (_payoutMethod == 'mobile') ...[
-                const Text(
-                  'Phone number to recieve funds',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              const Text(
+                'Phone number to receive funds',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: (() {
-                        try {
-                          return _phoneFocusNode.hasFocus
-                              ? const Color(0xFF2E7D32)
-                              : Colors.grey[300]!;
-                        } catch (e) {
-                          return Colors.grey[300]!;
-                        }
-                      })(),
-                      width: (() {
-                        try {
-                          return _phoneFocusNode.hasFocus ? 2.0 : 1.0;
-                        } catch (e) {
-                          return 1.0;
-                        }
-                      })(),
-                    ),
-                    boxShadow: (() {
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: (() {
                       try {
                         return _phoneFocusNode.hasFocus
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFF2E7D32).withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ];
+                            ? const Color(0xFF2E7D32)
+                            : Colors.grey[300]!;
                       } catch (e) {
-                        return [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ];
+                        return Colors.grey[300]!;
+                      }
+                    })(),
+                    width: (() {
+                      try {
+                        return _phoneFocusNode.hasFocus ? 2.0 : 1.0;
+                      } catch (e) {
+                        return 1.0;
                       }
                     })(),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _phoneController,
-                          focusNode: _phoneFocusNode,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          style: const TextStyle(fontSize: 16),
-                          onTap: () {
-                            if (!mounted) return;
-                            setModalState(() {});
-                          },
-                          onChanged: (value) {
-                            if (!mounted) return;
-                            setModalState(() {});
-                          },
-                          decoration: const InputDecoration(
-                            hintText: '0758376759',
-                            hintStyle: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                            contentPadding: EdgeInsets.all(20),
-                            border: InputBorder.none,
-                            prefixIcon: Icon(
-                              Icons.phone_outlined,
-                              color: Color(0xFF2E7D32),
-                            ),
-                          ),
+                  boxShadow: (() {
+                    try {
+                      return _phoneFocusNode.hasFocus
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ];
+                    } catch (e) {
+                      return [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: IconButton(
-                          onPressed: () async {
-                            final clipboardData =
-                                await Clipboard.getData(Clipboard.kTextPlain);
-                            if (clipboardData?.text != null) {
-                              _phoneController.text = clipboardData!.text!;
-                              setModalState(() {});
-                            }
-                          },
-                          icon: const Icon(
-                            Icons.paste_outlined,
+                      ];
+                    }
+                  })(),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _phoneController,
+                        focusNode: _phoneFocusNode,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        style: const TextStyle(fontSize: 16),
+                        onTap: () {
+                          if (!mounted) return;
+                          setModalState(() {});
+                        },
+                        onChanged: (value) {
+                          if (!mounted) return;
+                          setModalState(() {});
+                        },
+                        decoration: const InputDecoration(
+                          hintText: '0758376759',
+                          hintStyle: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          contentPadding: EdgeInsets.all(20),
+                          border: InputBorder.none,
+                          prefixIcon: Icon(
+                            Icons.phone_outlined,
                             color: Color(0xFF2E7D32),
                           ),
-                          tooltip: 'Paste from clipboard',
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                const Text(
-                  'Bank account number',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _bankAccountController,
-                  focusNode: _bankAccountFocusNode,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        onPressed: () async {
+                          final clipboardData =
+                              await Clipboard.getData(Clipboard.kTextPlain);
+                          if (clipboardData?.text != null) {
+                            _phoneController.text = clipboardData!.text!;
+                            setModalState(() {});
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.paste_outlined,
+                          color: Color(0xFF2E7D32),
+                        ),
+                        tooltip: 'Paste from clipboard',
+                      ),
+                    ),
                   ],
-                  onTap: () {
-                    if (!mounted) return;
-                    setModalState(() {});
-                  },
-                  onChanged: (_) {
-                    if (!mounted) return;
-                    setModalState(() {});
-                  },
-                  decoration: InputDecoration(
-                    hintText: '0200000000',
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.account_balance,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
                 ),
-              ],
+              ),
               const SizedBox(height: 24),
 
               // Transfer Funds Button or Confirmation
@@ -1456,10 +1314,7 @@ class _ContractCardState extends State<ContractCard> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: (_payoutMethod == 'mobile'
-                                ? _phoneController.text.isNotEmpty
-                                : (_selectedBankCode != null &&
-                                    _bankAccountController.text.trim().isNotEmpty))
+                    onPressed: (_phoneController.text.isNotEmpty)
                         ? () {
                             print('Transfer Funds button pressed');
                             print('Phone text: ${_phoneController.text}');
@@ -1490,62 +1345,19 @@ class _ContractCardState extends State<ContractCard> {
     );
   }
 
-  Widget _buildMethodOption(
-    String label,
-    String value,
-    StateSetter setModalState,
-  ) {
-    final isSelected = _payoutMethod == value;
-    return InkWell(
-      onTap: () {
-        setModalState(() {
-          _payoutMethod = value;
-          _showConfirmation = false;
-        });
-        setState(() {
-          _payoutMethod = value;
-          _showConfirmation = false;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.green.withOpacity(0.1) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.green : Colors.black,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showTransferConfirmation(
       BuildContext context, StateSetter setModalState) {
     setModalState(() {
       _showConfirmation = true;
     });
-    setState(() {
-      _showConfirmation = true;
-    });
+    if (mounted) {
+      setState(() {
+        _showConfirmation = true;
+      });
+    }
   }
 
   Widget _buildTransferConfirmation(StateSetter setModalState) {
-    final detailsText = _payoutMethod == 'bank'
-        ? '${_selectedBankCode ?? ''} • ${_bankAccountController.text}'
-        : _phoneController.text;
     return Column(
       children: [
         const SizedBox(height: 24),
@@ -1564,10 +1376,8 @@ class _ContractCardState extends State<ContractCard> {
                 size: 32,
               ),
               const SizedBox(height: 12),
-              Text(
-                _payoutMethod == 'bank'
-                    ? 'Are you sure you want to transfer funds to this bank account?'
-                    : 'Are you sure you want to transfer funds to this number?',
+              const Text(
+                'Are you sure you want to transfer funds to this number?',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1577,7 +1387,7 @@ class _ContractCardState extends State<ContractCard> {
               ),
               const SizedBox(height: 8),
               Text(
-                detailsText,
+                _phoneController.text,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -1657,36 +1467,46 @@ class _ContractCardState extends State<ContractCard> {
       final contractService = ContractService();
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-      final isBank = _payoutMethod == 'bank';
+      final formattedMsisdn = _phoneController.text.trim();
+      final phoneForApi = formattedMsisdn.startsWith('255')
+          ? formattedMsisdn
+          : (formattedMsisdn.startsWith('0')
+              ? '255${formattedMsisdn.substring(1)}'
+              : '255$formattedMsisdn');
+      final provider = _mobileProvider;
 
-      // Determine channel and required fields
-      String? formattedMsisdn;
-      String channel;
-
-      if (isBank) {
-        channel = 'bank';
-      } else {
-        // Format phone number to international format
-        formattedMsisdn = _phoneController.text.trim();
-        if (!formattedMsisdn.startsWith('255')) {
-          if (formattedMsisdn.startsWith('0')) {
-            formattedMsisdn = '255${formattedMsisdn.substring(1)}';
-          } else {
-            formattedMsisdn = '255$formattedMsisdn';
-          }
+      // Name lookup before payout
+      final paymentService = PaymentService();
+      try {
+        final lookupResult = await paymentService.nameLookup(
+          accountNumber: phoneForApi,
+          provider: provider,
+          channel: 'mobile',
+          authToken: userProvider.user!.id,
+        );
+        final lookupData = lookupResult['data'] as Map<String, dynamic>?;
+        final lookupName = _extractLookupName(
+            lookupData?['lookupResult']);
+        if (lookupName != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Recipient: $lookupName'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
-        channel = 'mobile';
+      } catch (_) {
+        // Name lookup failed — proceed anyway
       }
 
       // Prepare request body
       final requestBody = {
         'contractId': widget.contract.id,
         'recipientNames': widget.contract.beneficiaryName ?? 'Unknown',
-        'channel': channel,
+        'channel': 'mobile',
         'narration': 'Payout for completed job #${widget.contract.id}',
-        if (!isBank) 'msisdn': formattedMsisdn,
-        if (isBank) 'recipient_bank': _selectedBankCode,
-        if (isBank) 'recipient_account': _bankAccountController.text.trim(),
+        'msisdn': phoneForApi,
+        'provider': provider,
       };
 
       // Print request body for debugging
@@ -1796,6 +1616,16 @@ class _ContractCardState extends State<ContractCard> {
         ),
       );
     }
+  }
+
+  String? _extractLookupName(dynamic lookupResult) {
+    if (lookupResult == null) return null;
+    if (lookupResult is Map) {
+      return lookupResult['name']?.toString() ??
+          lookupResult['accountName']?.toString() ??
+          lookupResult['fullName']?.toString();
+    }
+    return null;
   }
 
   void _openWhatsApp() async {

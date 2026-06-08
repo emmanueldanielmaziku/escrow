@@ -815,7 +815,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         budget.description,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           color: Colors.grey[600],
                         ),
                         maxLines: 1,
@@ -842,7 +842,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextStyle(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
-                    fontSize: 11,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -867,7 +867,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                       contractTypeText,
                 style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                   fontWeight: FontWeight.w600,
                         color: budget.contractType == ContractType.negotiable
                             ? Colors.orange
@@ -891,7 +891,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                         _formatBudgetDuration(budget.remainingTime!),
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.blue,
                         ),
@@ -912,7 +912,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       'Funding Progress',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
@@ -942,7 +942,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       'TSh ${budget.fundedAmount.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[800],
                       ),
@@ -950,7 +950,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text(
                       'TSh ${budget.amount.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -967,13 +967,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _showAddFundsDialog(context, budget),
-                      icon: const Icon(Iconsax.add, size: 14),
+                      icon: const Icon(Iconsax.add, size: 16),
                       label: const Text('Add Funds',
-                          style: TextStyle(fontSize: 11)),
+                          style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -996,13 +996,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _showAddFundsDialog(context, budget),
-                      icon: const Icon(Iconsax.add, size: 14),
+                      icon: const Icon(Iconsax.add, size: 16),
                       label: const Text('Add Funds',
-                          style: TextStyle(fontSize: 11)),
+                          style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1015,13 +1015,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _showAddFundsDialog(context, budget),
-                      icon: const Icon(Iconsax.add, size: 14),
+                      icon: const Icon(Iconsax.add, size: 16),
                       label: const Text('Add Funds',
-                          style: TextStyle(fontSize: 11)),
+                          style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1045,13 +1045,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _showAddFundsDialog(context, budget),
-                        icon: const Icon(Iconsax.add, size: 14),
+                        icon: const Icon(Iconsax.add, size: 16),
                         label: const Text('Add Funds',
-                            style: TextStyle(fontSize: 11)),
+                            style: TextStyle(fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -1070,9 +1070,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         .isAfter(budget.contractEndDate!)))
                             ? () => _showWithdrawDialog(context, budget)
                             : null, // Disabled for Non-Negotiable if term not reached
-                        icon: const Icon(Iconsax.arrow_down_2, size: 14),
+                        icon: const Icon(Iconsax.arrow_down_2, size: 16),
                         label: const Text('Withdraw',
-                            style: TextStyle(fontSize: 11)),
+                            style: TextStyle(fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: (budget.contractType ==
                                       ContractType.negotiable ||
@@ -1088,7 +1088,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           .isAfter(budget.contractEndDate!)))
                               ? Colors.white
                               : Colors.grey[600]!,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

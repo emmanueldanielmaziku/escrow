@@ -10,7 +10,7 @@ class AppConfig {
   // API Base URL configuration
   static const String _devBaseUrl = 'http://localhost:3000';
   static const String _stagingBaseUrl = 'https://maipay-staging.ondigitalocean.app';
-  static const String _prodBaseUrl = 'https://maipay-dmrtw.ondigitalocean.app';
+  static const String _prodBaseUrl = 'https://api.maiescrow.com';
 
   /// Get the API base URL based on the current environment
   static String get baseUrl {

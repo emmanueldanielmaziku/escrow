@@ -69,6 +69,7 @@ class BudgetPaymentService {
     String? recipientBank,
     String? recipientAccount,
     String? narration,
+    String? provider,
   }) async {
     final url = '${AppConstants.baseUrl}/api/budget-payouts/initiate';
     final headers = {
@@ -84,6 +85,7 @@ class BudgetPaymentService {
       if (recipientBank != null) 'recipient_bank': recipientBank,
       if (recipientAccount != null) 'recipient_account': recipientAccount,
       if (narration != null) 'narration': narration,
+      if (provider != null) 'provider': provider,
     };
 
     print('🚀 [BUDGET WITHDRAWAL] POST $url');

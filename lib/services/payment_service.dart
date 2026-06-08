@@ -4,6 +4,43 @@ import '../utils/constants.dart';
 class PaymentService {
   final Dio _dio = Dio();
 
+  Future<Map<String, dynamic>> nameLookup({
+    required String accountNumber,
+    required String provider,
+    required String channel,
+    required String authToken,
+  }) async {
+    final url = '${AppConstants.baseUrl}/api/payouts/namelookup';
+    final headers = {
+      'Authorization': 'Bearer $authToken',
+      'Content-Type': 'application/json',
+    };
+    final body = {
+      'accountNumber': accountNumber,
+      'provider': provider,
+      'channel': channel,
+    };
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: body,
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      throw Exception('Name lookup failed: ${response.statusMessage}');
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final message = data is Map
+          ? (data['message']?.toString() ?? data['error']?.toString() ?? 'Name lookup failed')
+          : 'Name lookup failed';
+      throw Exception(message);
+    }
+  }
+
   Future<Map<String, dynamic>> initiatePayment({
     required String contractId,
     required double amount,
