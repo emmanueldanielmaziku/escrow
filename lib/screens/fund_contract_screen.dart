@@ -85,15 +85,8 @@ class _FundContractScreenState extends State<FundContractScreen> {
         throw Exception('User not found');
       }
 
-      // Format phone number to international format
-      String formattedMsisdn = _phoneNumberController.text.trim();
-      if (!formattedMsisdn.startsWith('255')) {
-        if (formattedMsisdn.startsWith('0')) {
-          formattedMsisdn = '255${formattedMsisdn.substring(1)}';
-        } else {
-          formattedMsisdn = '255$formattedMsisdn';
-        }
-      }
+      // Send the phone number exactly as the user typed it
+      final String msisdn = _phoneNumberController.text.trim();
 
       // Initiate payment via API
       await _paymentService.initiatePayment(
@@ -102,7 +95,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
         initiatorId: user.id,
         beneficiaryId: widget.contract.beneficiaryId ?? '',
         currency: 'TZS',
-        msisdn: formattedMsisdn,
+        msisdn: msisdn,
         narration: 'Payment for contract ${widget.contract.id}',
       );
 
