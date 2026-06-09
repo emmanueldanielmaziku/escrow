@@ -31,6 +31,11 @@ class _FundContractScreenState extends State<FundContractScreen> {
   bool _isInitiatingPayment = false;
   bool _isSuccess = false;
   bool _hasNotifiedActivation = false; // Prevent duplicate notifications
+  String _mobileProvider = 'Azampesa';
+
+  static const Map<String, String> _mobileProviders = {
+    'Azampesa': 'Azampesa',
+  };
 
   final _contractService = ContractService();
 
@@ -86,7 +91,8 @@ class _FundContractScreenState extends State<FundContractScreen> {
       }
 
       // Send the phone number exactly as the user typed it
-      final String msisdn = _phoneNumberController.text.trim();
+      final String rawMsisdn = _phoneNumberController.text.trim();
+      final String msisdn = _formatPhoneNumber(rawMsisdn, _mobileProvider);
 
       // Initiate payment via API
       await _paymentService.initiatePayment(
@@ -119,6 +125,23 @@ class _FundContractScreenState extends State<FundContractScreen> {
         );
       }
     }
+  }
+
+  String _formatPhoneNumber(String phone, String provider) {
+    String digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (provider == 'Azampesa') {
+      if (digits.startsWith('255')) {
+        digits = '1${digits.substring(3)}';
+      } else if (digits.startsWith('0')) {
+        digits = '1${digits.substring(1)}';
+      } else if (!digits.startsWith('1')) {
+        digits = '1$digits';
+      }
+    } else {
+      if (digits.startsWith('0')) digits = '255${digits.substring(1)}';
+      if (!digits.startsWith('255')) digits = '255$digits';
+    }
+    return digits;
   }
 
   Future<void> _monitorContractStatus() async {
@@ -368,59 +391,43 @@ class _FundContractScreenState extends State<FundContractScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Azampesa-only payment banner
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2E7D32).withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: const Color(0xFF2E7D32).withOpacity(0.18),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2E7D32),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.phone_android_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Azampesa',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF2E7D32),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'You will receive a USSD push to confirm payment.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[700],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      // Mobile Provider Dropdown
+                      const Text(
+                        'Mobile Provider',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
                         ),
                       ),
-
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: _mobileProvider,
+                        items: _mobileProviders.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                enabled: e.key == 'Azampesa',
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _mobileProvider = v!),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'A payment request will be sent to your Azampesa app. Open the app and approve it to complete the payment.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                       const SizedBox(height: 24),
 
                       // Phone Number Section

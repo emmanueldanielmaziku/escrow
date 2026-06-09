@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -63,10 +64,6 @@ class _ContractCardState extends State<ContractCard> {
 
   static const Map<String, String> _mobileProviders = {
     'Azampesa': 'Azampesa',
-    'TIGOPESA': 'Tigo Pesa',
-    'MPESA': 'M-Pesa',
-    'AIRTELMONEY': 'Airtel Money',
-    'HALOPESA': 'HaloPesa',
   };
 
   @override
@@ -1170,6 +1167,7 @@ class _ContractCardState extends State<ContractCard> {
                 items: _mobileProviders.entries
                     .map(
                       (e) => DropdownMenuItem(
+                        enabled: e.key == 'Azampesa',
                         value: e.key,
                         child: Text(e.value),
                       ),
@@ -1452,52 +1450,88 @@ class _ContractCardState extends State<ContractCard> {
     );
   }
 
+  static const Color _primaryColor = Color(0xFF2E7D32);
+
+  Future<bool?> _showNameLookupConfirmation({
+    required double amount,
+    required String msisdn,
+    required String provider,
+    required String providerLabel,
+    required String authToken,
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: const Center(
+          child: CupertinoActivityIndicator(radius: 24, color: Colors.white),
+        ),
+      ),
+    );
+
+    String? recipientName;
+    try {
+      final paymentService = PaymentService();
+      final lookupResult = await paymentService.nameLookup(
+        accountNumber: msisdn,
+        provider: provider,
+        channel: 'mobile',
+        authToken: authToken,
+      );
+      final lookupData = lookupResult['data'] as Map<String, dynamic>?;
+      recipientName = _extractLookupName(lookupData?['lookupResult']);
+    } catch (_) {
+      recipientName = null;
+    }
+
+    if (mounted) Navigator.of(context).pop();
+
+    if (!mounted) return null;
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (_) => _NameLookupConfirmationSheet(
+        amount: amount,
+        msisdn: msisdn,
+        providerLabel: providerLabel,
+        recipientName: recipientName,
+        primaryColor: _primaryColor,
+        title: 'Confirm Payout',
+      ),
+    );
+  }
+
   void _confirmTransfer(StateSetter setModalState) async {
     if (kDebugMode) {
       print('_confirmTransfer method called');
     }
     try {
-      if (kDebugMode) {
-        print('Setting _isTransferring to true');
-      }
-      setModalState(() {
-        _isTransferring = true;
-      });
-
       final contractService = ContractService();
       final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-      final formattedMsisdn = _phoneController.text.trim();
-      final phoneForApi = formattedMsisdn.startsWith('255')
-          ? formattedMsisdn
-          : (formattedMsisdn.startsWith('0')
-              ? '255${formattedMsisdn.substring(1)}'
-              : '255$formattedMsisdn');
+      final String rawMsisdn = _phoneController.text.trim();
+      final String msisdn = _formatPhoneNumber(rawMsisdn, _mobileProvider);
       final provider = _mobileProvider;
+      final providerLabel = _mobileProviders[provider] ?? provider;
+      final double amount = widget.contract.reward;
 
-      // Name lookup before payout
-      final paymentService = PaymentService();
-      try {
-        final lookupResult = await paymentService.nameLookup(
-          accountNumber: phoneForApi,
-          provider: provider,
-          channel: 'mobile',
-          authToken: userProvider.user!.id,
-        );
-        final lookupData = lookupResult['data'] as Map<String, dynamic>?;
-        final lookupName = _extractLookupName(
-            lookupData?['lookupResult']);
-        if (lookupName != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Recipient: $lookupName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (_) {
-        // Name lookup failed — proceed anyway
-      }
+      final confirmed = await _showNameLookupConfirmation(
+        amount: amount,
+        msisdn: msisdn,
+        provider: provider,
+        providerLabel: providerLabel,
+        authToken: userProvider.user!.id,
+      );
+
+      if (confirmed != true) return;
+
+      setModalState(() {
+        _isTransferring = true;
+      });
 
       // Prepare request body
       final requestBody = {
@@ -1505,7 +1539,7 @@ class _ContractCardState extends State<ContractCard> {
         'recipientNames': widget.contract.beneficiaryName ?? 'Unknown',
         'channel': 'mobile',
         'narration': 'Payout for completed job #${widget.contract.id}',
-        'msisdn': phoneForApi,
+        'msisdn': msisdn,
         'provider': provider,
       };
 
@@ -1574,6 +1608,23 @@ class _ContractCardState extends State<ContractCard> {
         );
       }
     }
+  }
+
+  String _formatPhoneNumber(String phone, String provider) {
+    String digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (provider == 'Azampesa') {
+      if (digits.startsWith('255')) {
+        digits = '1${digits.substring(3)}';
+      } else if (digits.startsWith('0')) {
+        digits = '1${digits.substring(1)}';
+      } else if (!digits.startsWith('1')) {
+        digits = '1$digits';
+      }
+    } else {
+      if (digits.startsWith('0')) digits = '255${digits.substring(1)}';
+      if (!digits.startsWith('255')) digits = '255$digits';
+    }
+    return digits;
   }
 
   Future<void> _monitorContractStatus() async {
@@ -1645,5 +1696,155 @@ class _ContractCardState extends State<ContractCard> {
         debugPrint("Both methods failed");
       }
     }
+  }
+}
+
+class _NameLookupConfirmationSheet extends StatelessWidget {
+  final double amount;
+  final String msisdn;
+  final String providerLabel;
+  final String? recipientName;
+  final Color primaryColor;
+  final String title;
+
+  const _NameLookupConfirmationSheet({
+    required this.amount,
+    required this.msisdn,
+    required this.providerLabel,
+    required this.recipientName,
+    required this.primaryColor,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context, false),
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox(height: 60),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.info_outline, color: primaryColor, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildRow('Amount', 'TSh ${amount.toStringAsFixed(2)}'),
+                      const Divider(height: 16),
+                      _buildRow('Phone', msisdn),
+                      const Divider(height: 16),
+                      _buildRow('Provider', providerLabel),
+                      const Divider(height: 16),
+                      if (recipientName != null)
+                        _buildRow('Recipient', recipientName!, valueColor: primaryColor)
+                      else
+                        _buildRow('Recipient', 'Not available', valueColor: Colors.orange),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          side: BorderSide(color: Colors.grey[300]!),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 2,
+                        ),
+                        child: const Text('Confirm', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor ?? Colors.black87),
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
   }
 }

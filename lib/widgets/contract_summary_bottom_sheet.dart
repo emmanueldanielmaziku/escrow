@@ -495,12 +495,6 @@ class _ContractSummaryBottomSheetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDetailRow(
-            label: 'Contract ID',
-            value: widget.contract.id,
-            icon: Icons.tag_outlined,
-          ),
-          const Divider(height: 16),
-          _buildDetailRow(
             label: 'Contract Date',
             value: contractDate,
             icon: Icons.calendar_today_outlined,
