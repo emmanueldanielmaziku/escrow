@@ -467,7 +467,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Deposit fee: 0.8% (charged at checkout)',
+                        'No deposit fee charged.',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[700],

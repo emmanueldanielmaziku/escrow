@@ -1,11 +1,11 @@
 /// Utility class for calculating contract fees based on amount
 class FeeCalculator {
-  static const double _depositFeeRate = 0.008; // 0.8%
+  static const double _depositFeeRate = 0; // 0%
 
   /// Calculates the fee based on the contract amount
   ///
   /// Fee policy:
-  /// - Deposit fee = 0.8% of amount
+  /// - Deposit fee = 0% of amount (no fee)
   static double calculateFee(double amount) {
     if (amount <= 0) return 0.0;
     return amount * _depositFeeRate;

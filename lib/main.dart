@@ -86,7 +86,9 @@ void main() async {
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: (NotificationResponse response) {
-      print('🔔 Notification tapped: ${response.payload}');
+      if (kDebugMode) {
+        print('🔔 Notification tapped: ${response.payload}');
+      }
     },
   );
 
