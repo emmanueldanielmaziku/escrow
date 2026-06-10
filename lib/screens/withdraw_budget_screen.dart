@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import '../models/budget_contract_model.dart';
+import '../models/budget_transaction_model.dart';
 import '../providers/user_provider.dart';
 import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
+import '../services/budget_transaction_service.dart';
 import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
 
@@ -25,6 +27,7 @@ class WithdrawBudgetScreen extends StatefulWidget {
 class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   final _budgetPaymentService = BudgetPaymentService();
   final _budgetService = BudgetContractService();
+  final _transactionService = BudgetTransactionService();
 
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
@@ -35,6 +38,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   bool _showOverlay = false;
   bool _isInitiating = false;
   bool _isSuccess = false;
+  String? _withdrawalId;
 
   // Color scheme — green
   static const Color _primaryColor = Color(0xFF2E7D32);
@@ -179,7 +183,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       final String msisdn = _formatPhoneNumber(rawMsisdn, _mobileProvider);
       final provider = _mobileProvider;
 
-      await _budgetPaymentService.initiateBudgetWithdrawal(
+      final response = await _budgetPaymentService.initiateBudgetWithdrawal(
         budgetId: widget.budget.id,
         amount: amount,
         ownerId: user.id,
@@ -190,12 +194,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
         provider: provider,
       );
 
+      final withdrawalId = response['data']?['withdrawalId'] as String?;
+      _withdrawalId = withdrawalId;
+
       if (mounted) {
         setState(() {
           _isInitiating = false;
           _showOverlay = true;
         });
-        await _monitorWithdrawalStatus(amount);
+        await _monitorWithdrawalStatus(amount, withdrawalId: _withdrawalId);
       }
     } catch (e) {
       if (mounted) {
@@ -226,7 +233,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
     return digits;
   }
 
-  Future<void> _monitorWithdrawalStatus(double amount) async {
+  Future<void> _monitorWithdrawalStatus(double amount, {String? withdrawalId}) async {
     const timeout = Duration(seconds: 90);
     const interval = Duration(seconds: 3);
     final deadline = DateTime.now().add(timeout);
@@ -235,25 +242,32 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       try {
         final budget = await _budgetService.getBudgetContractDetails(widget.budget.id);
         if (budget != null && budget.fundedAmount < widget.budget.fundedAmount) {
-          if (mounted) {
-            setState(() => _isSuccess = true);
-            await Future.delayed(const Duration(seconds: 2));
-            if (mounted) {
-              setState(() => _showOverlay = false);
-              await Future.delayed(const Duration(milliseconds: 300));
-              if (mounted) {
-                Navigator.pop(context);
-                CustomSnackBar.show(
-                  context: context,
-                  message: 'Withdrawal successful! Funds are on their way. 💸',
-                  type: SnackBarType.success,
-                );
-              }
-            }
-          }
+          _showSuccess();
           return;
         }
       } catch (_) {}
+
+      if (withdrawalId != null) {
+        try {
+          final tx = await _transactionService.pollTransactionStatus(
+            budgetId: widget.budget.id,
+            transactionId: withdrawalId,
+            isDeposit: false,
+            timeout: const Duration(seconds: 2),
+            interval: const Duration(milliseconds: 500),
+          );
+          if (tx != null) {
+            if (tx.status == BudgetTransactionStatus.completed) {
+              _showSuccess();
+              return;
+            } else if (tx.status == BudgetTransactionStatus.failed) {
+              _showFailure();
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+
       await Future.delayed(interval);
     }
 
@@ -265,6 +279,36 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
         type: SnackBarType.info,
       );
     }
+  }
+
+  void _showSuccess() {
+    if (!mounted) return;
+    setState(() => _isSuccess = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _showOverlay = false);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Navigator.pop(context);
+            CustomSnackBar.show(
+              context: context,
+              message: 'Withdrawal successful! Funds are on their way.',
+              type: SnackBarType.success,
+            );
+          }
+        });
+      }
+    });
+  }
+
+  void _showFailure() {
+    if (!mounted) return;
+    setState(() => _showOverlay = false);
+    CustomSnackBar.show(
+      context: context,
+      message: 'Withdrawal failed. Please try again.',
+      type: SnackBarType.error,
+    );
   }
 
   void _snack(String msg, {bool error = false}) {
