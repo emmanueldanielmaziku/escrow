@@ -10,6 +10,8 @@ import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
 import '../services/budget_transaction_service.dart';
 import '../services/payment_service.dart';
+import '../services/provider_service.dart';
+import '../models/provider_model.dart';
 import '../utils/custom_snackbar.dart';
 
 class WithdrawBudgetScreen extends StatefulWidget {
@@ -48,6 +50,8 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   static const Map<String, String> _mobileProviders = {
     'Azampesa': 'Azampesa',
   };
+  List<ProviderModel> _providers = [];
+  final _providerService = ProviderService();
 
   double get _maxAmount => widget.budget.fundedAmount;
 
@@ -59,6 +63,19 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
     _amountFocusNode.addListener(() => setState(() {}));
     _phoneFocusNode.addListener(() => setState(() {}));
+    _loadProviders();
+  }
+
+  Future<void> _loadProviders() async {
+    try {
+      final list = await _providerService.fetchProviders();
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _providers = list;
+          _mobileProvider = list.first.name;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -96,7 +113,8 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       return;
     }
     if (amount > widget.budget.fundedAmount) {
-      _snack('Amount exceeds available funds (TSh ${widget.budget.fundedAmount.toStringAsFixed(2)})');
+      _snack(
+          'Amount exceeds available funds (TSh ${widget.budget.fundedAmount.toStringAsFixed(2)})');
       return;
     }
 
@@ -189,7 +207,8 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
         ownerId: user.id,
         msisdn: msisdn,
         channel: 'mobile',
-        recipientName: user.fullName.isNotEmpty ? user.fullName : 'Budget Owner',
+        recipientName:
+            user.fullName.isNotEmpty ? user.fullName : 'Budget Owner',
         narration: 'Withdrawal from: ${widget.budget.title}',
         provider: provider,
       );
@@ -233,15 +252,18 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
     return digits;
   }
 
-  Future<void> _monitorWithdrawalStatus(double amount, {String? withdrawalId}) async {
+  Future<void> _monitorWithdrawalStatus(double amount,
+      {String? withdrawalId}) async {
     const timeout = Duration(seconds: 90);
     const interval = Duration(seconds: 3);
     final deadline = DateTime.now().add(timeout);
 
     while (DateTime.now().isBefore(deadline)) {
       try {
-        final budget = await _budgetService.getBudgetContractDetails(widget.budget.id);
-        if (budget != null && budget.fundedAmount < widget.budget.fundedAmount) {
+        final budget =
+            await _budgetService.getBudgetContractDetails(widget.budget.id);
+        if (budget != null &&
+            budget.fundedAmount < widget.budget.fundedAmount) {
           _showSuccess();
           return;
         }
@@ -345,11 +367,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_isSuccess) ...[
-                const Icon(CupertinoIcons.checkmark_circle_fill, size: 80, color: _primaryColor),
+                const Icon(CupertinoIcons.checkmark_circle_fill,
+                    size: 80, color: _primaryColor),
                 const SizedBox(height: 20),
                 const Text(
                   'Withdrawal Successful!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryColor),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -358,11 +384,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                   textAlign: TextAlign.center,
                 ),
               ] else ...[
-                const CupertinoActivityIndicator(radius: 20, color: _primaryColor),
+                const CupertinoActivityIndicator(
+                    radius: 20, color: _primaryColor),
                 const SizedBox(height: 20),
                 const Text(
                   'Processing Withdrawal',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryColor),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryColor),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -393,7 +423,10 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
             elevation: 0,
             title: const Text(
               'Withdraw Funds',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
             ),
             centerTitle: true,
             leading: IconButton(
@@ -437,38 +470,56 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                       children: [
                         const Text(
                           'Amount to Withdraw',
-                          style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'TSh ${_getAmountDisplay()}',
-                          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: _primaryColor),
+                          style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Available: TSh ${fundedAmount.toStringAsFixed(2)}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         const Divider(height: 24),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('You will receive:', style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                            Text('You will receive:',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.w600)),
                             Text('TSh ${_getAmountDisplay()}',
-                                style: const TextStyle(fontSize: 13, color: _primaryColor, fontWeight: FontWeight.bold)),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: _primaryColor,
+                                    fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: _primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
                             'Mai Money',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _primaryColor),
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _primaryColor),
                           ),
                         ),
                       ],
@@ -482,9 +533,11 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Non-negotiable warning ──
-                      if (widget.budget.contractType == ContractType.nonNegotiable &&
+                      if (widget.budget.contractType ==
+                              ContractType.nonNegotiable &&
                           widget.budget.contractEndDate != null &&
-                          DateTime.now().isBefore(widget.budget.contractEndDate!))
+                          DateTime.now()
+                              .isBefore(widget.budget.contractEndDate!))
                         Container(
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.all(14),
@@ -495,12 +548,14 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.lock_clock, color: Colors.orange[700], size: 20),
+                              Icon(Icons.lock_clock,
+                                  color: Colors.orange[700], size: 20),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   'Non-negotiable contract. Withdrawal allowed after:\n${_formatDate(widget.budget.contractEndDate!)}',
-                                  style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.orange[800]),
                                 ),
                               ),
                             ],
@@ -509,21 +564,31 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
                       // ── Amount input ──
                       const Text('Withdrawal Amount',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor)),
                       const SizedBox(height: 8),
                       Text('Enter how much you want to withdraw',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[600])),
                       const SizedBox(height: 12),
                       _buildInputField(
                         controller: _amountController,
                         focusNode: _amountFocusNode,
                         hint: '0.00',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                        prefix: const Icon(Icons.attach_money, color: _primaryColor),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}'))
+                        ],
+                        prefix: const Icon(Icons.attach_money,
+                            color: _primaryColor),
                         prefixText: 'TSh ',
                         onChanged: (_) {
-                          final parsed = double.tryParse(_amountController.text);
+                          final parsed =
+                              double.tryParse(_amountController.text);
                           if (parsed != null && parsed > _maxAmount) {
                             _amountController.text =
                                 _maxAmount.toStringAsFixed(2);
@@ -555,18 +620,24 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                       const SizedBox(height: 12),
                       // ── Provider selection ──
                       const Text('Mobile Provider',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor)),
                       const SizedBox(height: 8),
                       Text('Select the mobile money provider',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[600])),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: _mobileProviders.entries
+                        items: (_providers.isNotEmpty
+                                ? _providers
+                                    .map((p) => MapEntry(p.name, p.name))
+                                : _mobileProviders.entries)
                             .map(
                               (e) => DropdownMenuItem(
-                                enabled: e.key == 'Azampesa',
                                 value: e.key,
                                 child: Text(e.value),
                               ),
@@ -587,27 +658,36 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
                       // ── Phone number ──
                       const Text('Phone Number',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _primaryColor)),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _primaryColor)),
                       const SizedBox(height: 8),
                       Text('Enter the phone number to receive funds',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[600])),
                       const SizedBox(height: 12),
                       _buildInputField(
                         controller: _phoneNumberController,
                         focusNode: _phoneFocusNode,
                         hint: '0758376759',
                         keyboardType: TextInputType.phone,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        prefix: const Icon(Icons.phone_outlined, color: _primaryColor),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        prefix: const Icon(Icons.phone_outlined,
+                            color: _primaryColor),
                         trailing: IconButton(
                           onPressed: () async {
-                            final data = await Clipboard.getData(Clipboard.kTextPlain);
+                            final data =
+                                await Clipboard.getData(Clipboard.kTextPlain);
                             if (data?.text != null) {
                               _phoneNumberController.text = data!.text!;
                               setState(() {});
                             }
                           },
-                          icon: const Icon(Icons.paste_outlined, color: _primaryColor),
+                          icon: const Icon(Icons.paste_outlined,
+                              color: _primaryColor),
                           tooltip: 'Paste',
                         ),
                         onChanged: (_) => setState(() {}),
@@ -620,12 +700,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: (_showOverlay || _isInitiating) ? null : _handleSubmit,
+                          onPressed: (_showOverlay || _isInitiating)
+                              ? null
+                              : _handleSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor,
                             foregroundColor: Colors.white,
                             disabledBackgroundColor: Colors.grey[300],
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
                             elevation: 4,
                             shadowColor: _primaryColor.withOpacity(0.3),
                           ),
@@ -633,15 +716,22 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                               ? const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    CupertinoActivityIndicator(radius: 10, color: Colors.white),
+                                    CupertinoActivityIndicator(
+                                        radius: 10, color: Colors.white),
                                     SizedBox(width: 12),
                                     Text('Processing…',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white)),
                                   ],
                                 )
                               : const Text(
                                   'Withdraw Funds',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
                                 ),
                         ),
                       ),
@@ -676,10 +766,14 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: focused ? _primaryColor : Colors.grey[300]!, width: focused ? 2 : 1),
+        border: Border.all(
+            color: focused ? _primaryColor : Colors.grey[300]!,
+            width: focused ? 2 : 1),
         boxShadow: [
           BoxShadow(
-            color: focused ? _primaryColor.withOpacity(0.08) : Colors.black.withOpacity(0.04),
+            color: focused
+                ? _primaryColor.withOpacity(0.08)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -770,13 +864,17 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                         color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(Icons.info_outline, color: primaryColor, size: 28),
+                      child: Icon(Icons.info_outline,
+                          color: primaryColor, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         title,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor),
                       ),
                     ),
                   ],
@@ -800,9 +898,11 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                       _buildRow('Provider', providerLabel),
                       const Divider(height: 16),
                       if (recipientName != null)
-                        _buildRow('Recipient', recipientName!, valueColor: primaryColor)
+                        _buildRow('Recipient', recipientName!,
+                            valueColor: primaryColor)
                       else
-                        _buildRow('Recipient', 'Not available', valueColor: Colors.orange),
+                        _buildRow('Recipient', 'Not available',
+                            valueColor: Colors.orange),
                     ],
                   ),
                 ),
@@ -816,9 +916,12 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                           foregroundColor: Colors.grey[700],
                           side: BorderSide(color: Colors.grey[300]!),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        child: const Text('Cancel',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -829,10 +932,13 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           elevation: 2,
                         ),
-                        child: const Text('Confirm', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        child: const Text('Confirm',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -853,7 +959,10 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor ?? Colors.black87),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? Colors.black87),
             textAlign: TextAlign.end,
           ),
         ),
@@ -861,4 +970,3 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
     );
   }
 }
-

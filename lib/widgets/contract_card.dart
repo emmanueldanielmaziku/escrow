@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
+import '../services/provider_service.dart';
+import '../models/provider_model.dart';
 import 'contract_summary_bottom_sheet.dart';
 
 class ContractCard extends StatefulWidget {
@@ -65,11 +67,14 @@ class _ContractCardState extends State<ContractCard> {
   static const Map<String, String> _mobileProviders = {
     'Azampesa': 'Azampesa',
   };
+  List<ProviderModel> _providers = [];
+  final _providerService = ProviderService();
 
   @override
   void initState() {
     super.initState();
     _terminationReasonController.addListener(_onTerminationReasonChanged);
+    _loadProviders();
   }
 
   @override
@@ -81,36 +86,20 @@ class _ContractCardState extends State<ContractCard> {
     super.dispose();
   }
 
+  Future<void> _loadProviders() async {
+    try {
+      final list = await _providerService.fetchProviders();
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _providers = list;
+          _mobileProvider = list.first.name;
+        });
+      }
+    } catch (_) {}
+  }
+
   void _onTerminationReasonChanged() {
     setState(() {});
-  }
-
-  // Show receipt bottom sheet
-  void _showReceipt() {
-    ContractSummaryBottomSheet.showReceipt(
-      context: context,
-      contract: widget.contract,
-    );
-  }
-
-  // Build View Receipt button
-  Widget _buildViewReceiptButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _showReceipt,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF2E7D32),
-          side: const BorderSide(color: Color(0xFF2E7D32)),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        icon: const Icon(Icons.receipt_long, size: 18),
-        label: const Text('View Receipt'),
-      ),
-    );
   }
 
   @override
@@ -1164,10 +1153,11 @@ class _ContractCardState extends State<ContractCard> {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 value: _mobileProvider,
-                items: _mobileProviders.entries
+                items: (_providers.isNotEmpty
+                        ? _providers.map((p) => MapEntry(p.name, p.name))
+                        : _mobileProviders.entries)
                     .map(
                       (e) => DropdownMenuItem(
-                        enabled: e.key == 'Azampesa',
                         value: e.key,
                         child: Text(e.value),
                       ),
@@ -1697,6 +1687,28 @@ class _ContractCardState extends State<ContractCard> {
       }
     }
   }
+
+  Widget _buildViewReceiptButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => ContractSummaryBottomSheet.showReceipt(
+          context: context,
+          contract: widget.contract,
+        ),
+        icon: const Icon(Icons.receipt_long, size: 18),
+        label: const Text('View Receipt'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.green[800],
+          side: BorderSide(color: Colors.green[300]!),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _NameLookupConfirmationSheet extends StatelessWidget {
@@ -1757,13 +1769,17 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                         color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(Icons.info_outline, color: primaryColor, size: 28),
+                      child: Icon(Icons.info_outline,
+                          color: primaryColor, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         title,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor),
                       ),
                     ),
                   ],
@@ -1787,9 +1803,11 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                       _buildRow('Provider', providerLabel),
                       const Divider(height: 16),
                       if (recipientName != null)
-                        _buildRow('Recipient', recipientName!, valueColor: primaryColor)
+                        _buildRow('Recipient', recipientName!,
+                            valueColor: primaryColor)
                       else
-                        _buildRow('Recipient', 'Not available', valueColor: Colors.orange),
+                        _buildRow('Recipient', 'Not available',
+                            valueColor: Colors.orange),
                     ],
                   ),
                 ),
@@ -1803,9 +1821,12 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                           foregroundColor: Colors.grey[700],
                           side: BorderSide(color: Colors.grey[300]!),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                        child: const Text('Cancel',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1816,10 +1837,13 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
                           backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           elevation: 2,
                         ),
-                        child: const Text('Confirm', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        child: const Text('Confirm',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -1840,7 +1864,10 @@ class _NameLookupConfirmationSheet extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor ?? Colors.black87),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? Colors.black87),
             textAlign: TextAlign.end,
           ),
         ),

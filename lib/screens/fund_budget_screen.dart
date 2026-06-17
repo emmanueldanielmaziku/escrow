@@ -7,6 +7,8 @@ import '../models/budget_contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
+import '../services/provider_service.dart';
+import '../models/provider_model.dart';
 import '../utils/custom_snackbar.dart';
 
 class FundBudgetScreen extends StatefulWidget {
@@ -36,16 +38,12 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   static const Map<String, String> _mobileProviders = {
     'Azampesa': 'Azampesa',
   };
+  List<ProviderModel> _providers = [];
+  final _providerService = ProviderService();
 
   final _budgetService = BudgetContractService();
 
   double get _maxAmount => widget.budget.amount - widget.budget.fundedAmount;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController.text = _maxAmount.toStringAsFixed(2);
-  }
 
   @override
   void dispose() {
@@ -54,6 +52,25 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     _amountController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController.text = _maxAmount.toStringAsFixed(2);
+    _loadProviders();
+  }
+
+  Future<void> _loadProviders() async {
+    try {
+      final list = await _providerService.fetchProviders();
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _providers = list;
+          _mobileProvider = list.first.name;
+        });
+      }
+    } catch (_) {}
   }
 
   String _getAmountToDisplay() {
@@ -110,7 +127,8 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     if (amount > remainingAmount) {
       CustomSnackBar.show(
         context: context,
-        message: 'Amount cannot exceed remaining amount (TSh ${remainingAmount.toStringAsFixed(2)})',
+        message:
+            'Amount cannot exceed remaining amount (TSh ${remainingAmount.toStringAsFixed(2)})',
         type: SnackBarType.error,
       );
       return;
@@ -139,9 +157,9 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
         amount: amount,
         ownerId: user.id,
         msisdn: msisdn,
+        provider: _mobileProvider,
         narration: 'Funding budget: ${widget.budget.title}',
       );
-
 
       if (mounted) {
         setState(() {
@@ -187,11 +205,13 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     while (DateTime.now().isBefore(deadline)) {
       try {
         // Poll Firestore budget_contracts for status change
-        final budget = await _budgetService.getBudgetContractDetails(widget.budget.id);
+        final budget =
+            await _budgetService.getBudgetContractDetails(widget.budget.id);
 
         if (budget?.status == BudgetContractStatus.active ||
             budget?.status == BudgetContractStatus.inProgress ||
-            (budget != null && budget.fundedAmount > widget.budget.fundedAmount)) {
+            (budget != null &&
+                budget.fundedAmount > widget.budget.fundedAmount)) {
           if (mounted) {
             setState(() {
               _isSuccess = true;
@@ -255,7 +275,9 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isFullyFunded ? 'Budget is now active' : 'Deposit successful',
+                  _isFullyFunded
+                      ? 'Budget is now active'
+                      : 'Deposit successful',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 13,
@@ -422,10 +444,12 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: _mobileProviders.entries
+                        items: (_providers.isNotEmpty
+                                ? _providers
+                                    .map((p) => MapEntry(p.name, p.name))
+                                : _mobileProviders.entries)
                             .map(
                               (e) => DropdownMenuItem(
-                                enabled: e.key == 'Azampesa',
                                 value: e.key,
                                 child: Text(e.value),
                               ),
@@ -505,9 +529,11 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                         child: TextField(
                           controller: _amountController,
                           focusNode: _amountFocusNode,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          keyboardType:
+                              TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d+\.?\d{0,2}')),
                           ],
                           style: const TextStyle(fontSize: 16),
                           onTap: () {

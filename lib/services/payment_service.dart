@@ -35,7 +35,9 @@ class PaymentService {
     } on DioException catch (e) {
       final data = e.response?.data;
       final message = data is Map
-          ? (data['message']?.toString() ?? data['error']?.toString() ?? 'Name lookup failed')
+          ? (data['message']?.toString() ??
+              data['error']?.toString() ??
+              'Name lookup failed')
           : 'Name lookup failed';
       throw Exception(message);
     }
@@ -50,6 +52,7 @@ class PaymentService {
     required String msisdn,
     String? channel,
     required String narration,
+    String? provider,
   }) async {
     try {
       // Prepare the request data
@@ -59,6 +62,7 @@ class PaymentService {
         'initiatorId': initiatorId,
         'currency': currency,
         'msisdn': msisdn,
+        if (provider != null) 'provider': provider,
         if (channel != null) 'channel': channel,
         'narration': narration,
       };

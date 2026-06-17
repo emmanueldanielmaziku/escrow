@@ -17,6 +17,7 @@ class BudgetPaymentService {
     required String msisdn,
     String? channel,
     String? narration,
+    String? provider,
   }) async {
     final url = '${AppConstants.baseUrl}/api/budget-payments/initiate';
     final headers = {
@@ -27,6 +28,7 @@ class BudgetPaymentService {
       'budgetId': budgetId,
       'amount': amount,
       'msisdn': msisdn,
+      if (provider != null) 'provider': provider,
       if (channel != null) 'channel': channel,
       if (narration != null) 'narration': narration,
     };
@@ -48,7 +50,8 @@ class BudgetPaymentService {
       }
       throw Exception('Budget deposit failed: ${response.statusMessage}');
     } on DioException catch (e) {
-      print('❌ [BUDGET DEPOSIT] DioException: ${e.response?.data ?? e.message}');
+      print(
+          '❌ [BUDGET DEPOSIT] DioException: ${e.response?.data ?? e.message}');
       final message = _extractErrorMessage(e);
       throw Exception(message);
     }
@@ -105,7 +108,8 @@ class BudgetPaymentService {
       }
       throw Exception('Budget withdrawal failed: ${response.statusMessage}');
     } on DioException catch (e) {
-      print('❌ [BUDGET WITHDRAWAL] DioException: ${e.response?.data ?? e.message}');
+      print(
+          '❌ [BUDGET WITHDRAWAL] DioException: ${e.response?.data ?? e.message}');
       final message = _extractErrorMessage(e);
       throw Exception(message);
     }
@@ -122,4 +126,3 @@ class BudgetPaymentService {
     return e.message ?? 'Unknown error';
   }
 }
-

@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import '../services/provider_service.dart';
+import '../models/provider_model.dart';
 import 'dart:ui';
 import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
@@ -36,6 +38,8 @@ class _FundContractScreenState extends State<FundContractScreen> {
   static const Map<String, String> _mobileProviders = {
     'Azampesa': 'Azampesa',
   };
+  List<ProviderModel> _providers = [];
+  final _providerService = ProviderService();
 
   final _contractService = ContractService();
 
@@ -44,6 +48,24 @@ class _FundContractScreenState extends State<FundContractScreen> {
     _phoneNumberController.dispose();
     _phoneFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviders();
+  }
+
+  Future<void> _loadProviders() async {
+    try {
+      final list = await _providerService.fetchProviders();
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _providers = list;
+          _mobileProvider = list.first.name;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _handlePaste() async {
@@ -102,6 +124,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
         beneficiaryId: widget.contract.beneficiaryId ?? '',
         currency: 'TZS',
         msisdn: msisdn,
+        provider: _mobileProvider,
         narration: 'Payment for contract ${widget.contract.id}',
       );
 
@@ -404,10 +427,12 @@ class _FundContractScreenState extends State<FundContractScreen> {
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: _mobileProviders.entries
+                        items: (_providers.isNotEmpty
+                                ? _providers
+                                    .map((p) => MapEntry(p.name, p.name))
+                                : _mobileProviders.entries)
                             .map(
                               (e) => DropdownMenuItem(
-                                enabled: e.key == 'Azampesa',
                                 value: e.key,
                                 child: Text(e.value),
                               ),
