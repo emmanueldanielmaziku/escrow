@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:random_avatar/random_avatar.dart';
+import 'package:shimmer/shimmer.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
 import '../widgets/contract_card.dart';
@@ -226,6 +227,26 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  Widget _buildShimmerContractList(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (index) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   Future<void> _handleApproveTermination(ContractModel contract) async {
@@ -516,8 +537,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
+                  return Center(
+                    child: _buildShimmerContractList(context),
                   );
                 }
 

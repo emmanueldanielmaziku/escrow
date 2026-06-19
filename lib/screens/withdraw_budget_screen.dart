@@ -10,8 +10,6 @@ import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
 import '../services/budget_transaction_service.dart';
 import '../services/payment_service.dart';
-import '../services/provider_service.dart';
-import '../models/provider_model.dart';
 import '../utils/custom_snackbar.dart';
 
 class WithdrawBudgetScreen extends StatefulWidget {
@@ -48,10 +46,12 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
   // Snippe supported banks (code -> display name)
   static const Map<String, String> _mobileProviders = {
+    'Airtel': 'Airtel',
+    'Tigo': 'Tigo',
+    'Halopesa': 'Halopesa',
     'Azampesa': 'Azampesa',
+    'Mpesa': 'Mpesa',
   };
-  List<ProviderModel> _providers = [];
-  final _providerService = ProviderService();
 
   double get _maxAmount => widget.budget.fundedAmount;
 
@@ -63,19 +63,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
     _amountFocusNode.addListener(() => setState(() {}));
     _phoneFocusNode.addListener(() => setState(() {}));
-    _loadProviders();
-  }
-
-  Future<void> _loadProviders() async {
-    try {
-      final list = await _providerService.fetchProviders();
-      if (mounted && list.isNotEmpty) {
-        setState(() {
-          _providers = list;
-          _mobileProvider = list.first.name;
-        });
-      }
-    } catch (_) {}
   }
 
   @override
@@ -250,6 +237,43 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       if (!digits.startsWith('255')) digits = '255$digits';
     }
     return digits;
+  }
+
+  Future<void> _handlePaste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null) {
+      _phoneNumberController.text = data!.text!;
+      setState(() {
+        _mobileProvider = _detectProviderFromPhone(_phoneNumberController.text);
+      });
+    }
+  }
+
+  String _detectProviderFromPhone(String phone) {
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('255')) {
+      digits = '0${digits.substring(3)}';
+    }
+
+    if (digits.startsWith('0')) {
+      if (digits.length >= 3) {
+        final prefix = digits.substring(0, 3);
+        if (['074', '075', '076'].contains(prefix)) return 'Mpesa';
+        if (['065', '067', '071'].contains(prefix)) return 'Tigo';
+        if (['068', '069', '078'].contains(prefix)) return 'Airtel';
+        if (['061', '062'].contains(prefix)) return 'Halopesa';
+      }
+      final trimmed = digits.substring(1);
+      if (trimmed.startsWith('16') || trimmed.startsWith('17')) {
+        return 'Azampesa';
+      }
+    } else {
+      if (digits.startsWith('16') || digits.startsWith('17')) {
+        return 'Azampesa';
+      }
+    }
+
+    return _mobileProvider;
   }
 
   Future<void> _monitorWithdrawalStatus(double amount,
@@ -603,21 +627,6 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // ── Payout method ──
-                      const Text(
-                        'Payout Method',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: _primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Funds will be sent to your mobile money',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 12),
                       // ── Provider selection ──
                       const Text('Mobile Provider',
                           style: TextStyle(
@@ -625,17 +634,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                               fontWeight: FontWeight.bold,
                               color: _primaryColor)),
                       const SizedBox(height: 8),
-                      Text('Select the mobile money provider',
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      Text(
+                        'Select the mobile money provider',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: (_providers.isNotEmpty
-                                ? _providers
-                                    .map((p) => MapEntry(p.name, p.name))
-                                : _mobileProviders.entries)
+                        items: _mobileProviders.entries
                             .map(
                               (e) => DropdownMenuItem(
                                 value: e.key,
@@ -678,19 +685,14 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                         prefix: const Icon(Icons.phone_outlined,
                             color: _primaryColor),
                         trailing: IconButton(
-                          onPressed: () async {
-                            final data =
-                                await Clipboard.getData(Clipboard.kTextPlain);
-                            if (data?.text != null) {
-                              _phoneNumberController.text = data!.text!;
-                              setState(() {});
-                            }
-                          },
+                          onPressed: _handlePaste,
                           icon: const Icon(Icons.paste_outlined,
                               color: _primaryColor),
                           tooltip: 'Paste',
                         ),
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (value) => setState(() {
+                          _mobileProvider = _detectProviderFromPhone(value);
+                        }),
                       ),
 
                       const SizedBox(height: 32),

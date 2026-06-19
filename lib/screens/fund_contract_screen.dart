@@ -3,8 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import '../services/provider_service.dart';
-import '../models/provider_model.dart';
 import 'dart:ui';
 import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
@@ -36,10 +34,12 @@ class _FundContractScreenState extends State<FundContractScreen> {
   String _mobileProvider = 'Azampesa';
 
   static const Map<String, String> _mobileProviders = {
+    'Airtel': 'Airtel',
+    'Tigo': 'Tigo',
+    'Halopesa': 'Halopesa',
     'Azampesa': 'Azampesa',
+    'Mpesa': 'Mpesa',
   };
-  List<ProviderModel> _providers = [];
-  final _providerService = ProviderService();
 
   final _contractService = ContractService();
 
@@ -53,19 +53,6 @@ class _FundContractScreenState extends State<FundContractScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProviders();
-  }
-
-  Future<void> _loadProviders() async {
-    try {
-      final list = await _providerService.fetchProviders();
-      if (mounted && list.isNotEmpty) {
-        setState(() {
-          _providers = list;
-          _mobileProvider = list.first.name;
-        });
-      }
-    } catch (_) {}
   }
 
   Future<void> _handlePaste() async {
@@ -165,6 +152,33 @@ class _FundContractScreenState extends State<FundContractScreen> {
       if (!digits.startsWith('255')) digits = '255$digits';
     }
     return digits;
+  }
+
+  String _detectProviderFromPhone(String phone) {
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('255')) {
+      digits = '0${digits.substring(3)}';
+    }
+
+    if (digits.startsWith('0')) {
+      if (digits.length >= 3) {
+        final prefix = digits.substring(0, 3);
+        if (['074', '075', '076'].contains(prefix)) return 'Mpesa';
+        if (['065', '067', '071'].contains(prefix)) return 'Tigo';
+        if (['068', '069', '078'].contains(prefix)) return 'Airtel';
+        if (['061', '062'].contains(prefix)) return 'Halopesa';
+      }
+      final trimmed = digits.substring(1);
+      if (trimmed.startsWith('16') || trimmed.startsWith('17')) {
+        return 'Azampesa';
+      }
+    } else {
+      if (digits.startsWith('16') || digits.startsWith('17')) {
+        return 'Azampesa';
+      }
+    }
+
+    return _mobileProvider;
   }
 
   Future<void> _monitorContractStatus() async {
@@ -427,10 +441,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: (_providers.isNotEmpty
-                                ? _providers
-                                    .map((p) => MapEntry(p.name, p.name))
-                                : _mobileProviders.entries)
+                        items: _mobileProviders.entries
                             .map(
                               (e) => DropdownMenuItem(
                                 value: e.key,
@@ -517,7 +528,10 @@ class _FundContractScreenState extends State<FundContractScreen> {
                                   setState(() {});
                                 },
                                 onChanged: (value) {
-                                  setState(() {});
+                                  setState(() {
+                                    _mobileProvider =
+                                        _detectProviderFromPhone(value);
+                                  });
                                 },
                                 decoration: const InputDecoration(
                                   hintText: '0758376759',

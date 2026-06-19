@@ -16,8 +16,6 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
-import '../services/provider_service.dart';
-import '../models/provider_model.dart';
 import 'contract_summary_bottom_sheet.dart';
 
 class ContractCard extends StatefulWidget {
@@ -65,16 +63,17 @@ class _ContractCardState extends State<ContractCard> {
   bool _isTransferring = false;
 
   static const Map<String, String> _mobileProviders = {
+    'Airtel': 'Airtel',
+    'Tigo': 'Tigo',
+    'Halopesa': 'Halopesa',
     'Azampesa': 'Azampesa',
+    'Mpesa': 'Mpesa',
   };
-  List<ProviderModel> _providers = [];
-  final _providerService = ProviderService();
 
   @override
   void initState() {
     super.initState();
     _terminationReasonController.addListener(_onTerminationReasonChanged);
-    _loadProviders();
   }
 
   @override
@@ -84,18 +83,6 @@ class _ContractCardState extends State<ContractCard> {
     _phoneController.dispose();
     _phoneFocusNode.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadProviders() async {
-    try {
-      final list = await _providerService.fetchProviders();
-      if (mounted && list.isNotEmpty) {
-        setState(() {
-          _providers = list;
-          _mobileProvider = list.first.name;
-        });
-      }
-    } catch (_) {}
   }
 
   void _onTerminationReasonChanged() {
@@ -1153,9 +1140,7 @@ class _ContractCardState extends State<ContractCard> {
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 value: _mobileProvider,
-                items: (_providers.isNotEmpty
-                        ? _providers.map((p) => MapEntry(p.name, p.name))
-                        : _mobileProviders.entries)
+                items: _mobileProviders.entries
                     .map(
                       (e) => DropdownMenuItem(
                         value: e.key,
@@ -1255,7 +1240,9 @@ class _ContractCardState extends State<ContractCard> {
                         },
                         onChanged: (value) {
                           if (!mounted) return;
-                          setModalState(() {});
+                          setModalState(() {
+                            _mobileProvider = _detectProviderFromPhone(value);
+                          });
                         },
                         decoration: const InputDecoration(
                           hintText: '0758376759',
@@ -1280,7 +1267,10 @@ class _ContractCardState extends State<ContractCard> {
                               await Clipboard.getData(Clipboard.kTextPlain);
                           if (clipboardData?.text != null) {
                             _phoneController.text = clipboardData!.text!;
-                            setModalState(() {});
+                            setModalState(() {
+                              _mobileProvider = _detectProviderFromPhone(
+                                  _phoneController.text);
+                            });
                           }
                         },
                         icon: const Icon(
@@ -1615,6 +1605,31 @@ class _ContractCardState extends State<ContractCard> {
       if (!digits.startsWith('255')) digits = '255$digits';
     }
     return digits;
+  }
+
+  String _detectProviderFromPhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    String normalized = digits;
+    if (normalized.startsWith('255')) {
+      normalized = normalized.substring(3);
+    } else if (normalized.startsWith('0')) {
+      normalized = normalized.substring(1);
+    }
+
+    if (normalized.length >= 2 &&
+        (normalized.startsWith('16') || normalized.startsWith('17'))) {
+      return 'Azampesa';
+    }
+
+    if (normalized.length >= 3) {
+      final prefix = normalized.substring(0, 3);
+      if (['074', '075', '076'].contains(prefix)) return 'Mpesa';
+      if (['065', '067', '071'].contains(prefix)) return 'Tigo';
+      if (['068', '069', '078'].contains(prefix)) return 'Airtel';
+      if (['061', '062'].contains(prefix)) return 'Halopesa';
+    }
+
+    return _mobileProvider;
   }
 
   Future<void> _monitorContractStatus() async {

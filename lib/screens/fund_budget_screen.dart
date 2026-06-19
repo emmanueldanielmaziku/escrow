@@ -7,8 +7,6 @@ import '../models/budget_contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/budget_contract_service.dart';
 import '../services/budget_payment_service.dart';
-import '../services/provider_service.dart';
-import '../models/provider_model.dart';
 import '../utils/custom_snackbar.dart';
 
 class FundBudgetScreen extends StatefulWidget {
@@ -25,6 +23,7 @@ class FundBudgetScreen extends StatefulWidget {
 
 class _FundBudgetScreenState extends State<FundBudgetScreen> {
   final _budgetPaymentService = BudgetPaymentService();
+  final _budgetService = BudgetContractService();
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
   final _amountController = TextEditingController();
@@ -36,12 +35,12 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   String _mobileProvider = 'Azampesa';
 
   static const Map<String, String> _mobileProviders = {
+    'Airtel': 'Airtel',
+    'Tigo': 'Tigo',
+    'Halopesa': 'Halopesa',
     'Azampesa': 'Azampesa',
+    'Mpesa': 'Mpesa',
   };
-  List<ProviderModel> _providers = [];
-  final _providerService = ProviderService();
-
-  final _budgetService = BudgetContractService();
 
   double get _maxAmount => widget.budget.amount - widget.budget.fundedAmount;
 
@@ -58,19 +57,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   void initState() {
     super.initState();
     _amountController.text = _maxAmount.toStringAsFixed(2);
-    _loadProviders();
-  }
-
-  Future<void> _loadProviders() async {
-    try {
-      final list = await _providerService.fetchProviders();
-      if (mounted && list.isNotEmpty) {
-        setState(() {
-          _providers = list;
-          _mobileProvider = list.first.name;
-        });
-      }
-    } catch (_) {}
   }
 
   String _getAmountToDisplay() {
@@ -91,6 +77,9 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
     if (clipboardData?.text != null) {
       _phoneNumberController.text = clipboardData!.text!;
+      setState(() {
+        _mobileProvider = _detectProviderFromPhone(_phoneNumberController.text);
+      });
     }
   }
 
@@ -195,6 +184,33 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       if (!digits.startsWith('255')) digits = '255$digits';
     }
     return digits;
+  }
+
+  String _detectProviderFromPhone(String phone) {
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('255')) {
+      digits = '0${digits.substring(3)}';
+    }
+
+    if (digits.startsWith('0')) {
+      if (digits.length >= 3) {
+        final prefix = digits.substring(0, 3);
+        if (['074', '075', '076'].contains(prefix)) return 'Mpesa';
+        if (['065', '067', '071'].contains(prefix)) return 'Tigo';
+        if (['068', '069', '078'].contains(prefix)) return 'Airtel';
+        if (['061', '062'].contains(prefix)) return 'Halopesa';
+      }
+      final trimmed = digits.substring(1);
+      if (trimmed.startsWith('16') || trimmed.startsWith('17')) {
+        return 'Azampesa';
+      }
+    } else {
+      if (digits.startsWith('16') || digits.startsWith('17')) {
+        return 'Azampesa';
+      }
+    }
+
+    return _mobileProvider;
   }
 
   Future<void> _monitorDepositStatus() async {
@@ -444,10 +460,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: _mobileProvider,
-                        items: (_providers.isNotEmpty
-                                ? _providers
-                                    .map((p) => MapEntry(p.name, p.name))
-                                : _mobileProviders.entries)
+                        items: _mobileProviders.entries
                             .map(
                               (e) => DropdownMenuItem(
                                 value: e.key,
@@ -491,7 +504,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No deposit fee charged.',
+                        'A deposit fee of 0.8% will be applied.',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[700],
@@ -631,7 +644,10 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                                   setState(() {});
                                 },
                                 onChanged: (value) {
-                                  setState(() {});
+                                  setState(() {
+                                    _mobileProvider =
+                                        _detectProviderFromPhone(value);
+                                  });
                                 },
                                 decoration: const InputDecoration(
                                   hintText: '0758376759',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:random_avatar/random_avatar.dart';
+import 'package:shimmer/shimmer.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
 import '../services/budget_contract_service.dart';
@@ -73,22 +74,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (shouldDelete == true) {
         await _contractService.deleteContract(contract.id);
-        if (context.mounted) {
-          CustomSnackBar.show(
-            context: context,
-            message: 'Contract deleted successfully',
-            type: SnackBarType.success,
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
+        if (!mounted) return;
         CustomSnackBar.show(
           context: context,
-          message: 'Error deleting contract: $e',
-          type: SnackBarType.error,
+          message: 'Contract deleted successfully',
+          type: SnackBarType.success,
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error deleting contract: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -101,21 +100,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contract.id,
         currentUserName: user?.fullName,
       );
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Withdrawal requested successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Withdrawal requested successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error requesting withdrawal: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error requesting withdrawal: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -128,14 +125,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         throw Exception('User not found');
       }
 
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Accepting invitation...',
-          type: SnackBarType.info,
-          duration: const Duration(seconds: 1),
-        );
-      }
+      CustomSnackBar.show(
+        context: context,
+        message: 'Accepting invitation...',
+        type: SnackBarType.info,
+        duration: const Duration(seconds: 1),
+      );
 
       await _contractService.acceptContract(
         contractId: contract.id,
@@ -144,21 +139,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         userPhone: user.phone,
       );
 
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Contract accepted successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Contract accepted successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error accepting contract: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error accepting contract: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -173,21 +166,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         terminationReason: terminationReason,
         currentUserName: user?.fullName,
       );
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Contract terminated successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Contract terminated successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error terminating contract: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error terminating contract: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -200,21 +191,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contract.id,
         currentUserName: user?.fullName,
       );
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Withdrawal confirmed successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Withdrawal confirmed successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error confirming withdrawal: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error confirming withdrawal: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -227,21 +216,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contract.id,
         currentUserName: user?.fullName,
       );
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Withdrawal declined successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Withdrawal declined successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error declining withdrawal: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error declining withdrawal: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -254,21 +241,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         contract.id,
         currentUserName: user?.fullName,
       );
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Contract termination approved successfully',
-          type: SnackBarType.success,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Contract termination approved successfully',
+        type: SnackBarType.success,
+      );
     } catch (e) {
-      if (context.mounted) {
-        CustomSnackBar.show(
-          context: context,
-          message: 'Error approving termination: $e',
-          type: SnackBarType.error,
-        );
-      }
+      if (!mounted) return;
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error approving termination: $e',
+        type: SnackBarType.error,
+      );
     }
   }
 
@@ -318,7 +303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 50,
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.white, width: 1.5),
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: userAvatar,
@@ -332,7 +317,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             'Welcome back,',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontSize: 14.0,
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Text(
@@ -477,11 +462,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     stream: contractStream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(),
-                          ),
+                        return Center(
+                          child: _buildShimmerRange(context),
                         );
                       }
 
@@ -583,11 +565,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     stream: budgetStream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(),
-                          ),
+                        return Center(
+                          child: _buildShimmerBudgetRow(context),
                         );
                       }
 
@@ -653,10 +632,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -697,7 +676,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -709,7 +688,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -751,7 +730,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildBudgetCard(BuildContext context, BudgetContractModel budget) {
+  Widget _buildShimmerRange(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: SizedBox(
+        height: 180,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemBuilder: (_, __) => Container(
+            width: MediaQuery.of(context).size.width * 0.75,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemCount: 2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerBudgetRow(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: SizedBox(
+        height: 220,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemBuilder: (_, __) => Container(
+            width: MediaQuery.of(context).size.width * 0.85,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemCount: 2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(
+    BuildContext context,
+    BudgetContractModel budget,
+  ) {
     final statusColor = BudgetContractModel.getStatusColor(budget.status);
     final statusText = BudgetContractModel.getStatusText(budget.status);
     final contractTypeText =
@@ -770,24 +800,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
         ],
       ),
       child: SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-        children: [
+          children: [
             // Header with title and status
-          Row(
-            children: [
+            Row(
+              children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -797,15 +827,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-              Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                  budget.title,
+                        budget.title,
                         style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                           color: Colors.grey[800],
                         ),
                         maxLines: 1,
@@ -822,36 +852,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                    vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: statusColor.withOpacity(0.3),
-                      width: 0.5,
-                    ),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             // Contract Type & Timer
-          Row(
-            children: [
+            Row(
+              children: [
                 Row(
                   children: [
                     Icon(
@@ -864,11 +894,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : Colors.red,
                     ),
                     const SizedBox(width: 6),
-              Text(
+                    Text(
                       contractTypeText,
-                style: TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                         color: budget.contractType == ContractType.negotiable
                             ? Colors.orange
                             : Colors.red,
@@ -888,7 +918,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: Colors.blue,
                       ),
                       const SizedBox(width: 4),
-              Text(
+                      Text(
                         _formatBudgetDuration(budget.remainingTime!),
                         style: const TextStyle(
                           fontSize: 13,
@@ -911,8 +941,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       'Funding Progress',
-                style: TextStyle(
-                  fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
@@ -923,17 +953,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
                 const SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(3),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
                 ),
                 const SizedBox(height: 6),
                 Row(
