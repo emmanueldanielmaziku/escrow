@@ -1,16 +1,19 @@
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 
-/// Handles budget-specific deposit (fund) and withdrawal (payout) API calls.
-class BudgetPaymentService {
-  final Dio _dio = Dio();
+/// Handles sahara-specific deposit (fund) and withdrawal (payout) API calls.
+class SaharaPaymentService {
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
+  ));
 
   // ──────────────────────────────────────────────
-  //  DEPOSIT  (fund a budget via mobile money)
+  //  DEPOSIT  (fund a sahara via mobile money)
   // ──────────────────────────────────────────────
   /// Calls POST /api/budget-payments/initiate
   /// [ownerId] is passed as the Bearer token.
-  Future<Map<String, dynamic>> initiateBudgetDeposit({
+  Future<Map<String, dynamic>> initiateSaharaDeposit({
     required String budgetId,
     required double amount,
     required String ownerId,
@@ -33,7 +36,7 @@ class BudgetPaymentService {
       if (narration != null) 'narration': narration,
     };
 
-    print('🚀 [BUDGET DEPOSIT] POST $url');
+    print('🚀 [SAHARA DEPOSIT] POST $url');
     print('📦 Body: $body');
 
     try {
@@ -43,26 +46,41 @@ class BudgetPaymentService {
         options: Options(headers: headers),
       );
 
-      print('✅ [BUDGET DEPOSIT] ${response.statusCode}: ${response.data}');
+      print('✅ [SAHARA DEPOSIT] ${response.statusCode}: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data as Map<String, dynamic>;
+        final data = response.data as Map<String, dynamic>;
+
+        if (data['success'] != true) {
+          throw Exception(
+            data['message']?.toString() ?? 'Sahara deposit failed',
+          );
+        }
+
+        final inner = data['data'];
+        if (inner is Map && inner['status'] == 'FAILED') {
+          throw Exception(
+            data['message']?.toString() ?? 'Payment gateway rejected the request',
+          );
+        }
+
+        return data;
       }
-      throw Exception('Budget deposit failed: ${response.statusMessage}');
+      throw Exception('Sahara deposit failed: ${response.statusMessage}');
     } on DioException catch (e) {
       print(
-          '❌ [BUDGET DEPOSIT] DioException: ${e.response?.data ?? e.message}');
+          '❌ [SAHARA DEPOSIT] DioException: ${e.response?.data ?? e.message}');
       final message = _extractErrorMessage(e);
       throw Exception(message);
     }
   }
 
   // ──────────────────────────────────────────────
-  //  WITHDRAWAL  (withdraw from budget to mobile)
+  //  WITHDRAWAL  (withdraw from sahara to mobile)
   // ──────────────────────────────────────────────
   /// Calls POST /api/budget-payouts/initiate
   /// [ownerId] is passed as the Bearer token.
-  Future<Map<String, dynamic>> initiateBudgetWithdrawal({
+  Future<Map<String, dynamic>> initiateSaharaWithdrawal({
     required String budgetId,
     required double amount,
     required String ownerId,
@@ -91,7 +109,7 @@ class BudgetPaymentService {
       if (provider != null) 'provider': provider,
     };
 
-    print('🚀 [BUDGET WITHDRAWAL] POST $url');
+    print('🚀 [SAHARA WITHDRAWAL] POST $url');
     print('📦 Body: $body');
 
     try {
@@ -101,15 +119,15 @@ class BudgetPaymentService {
         options: Options(headers: headers),
       );
 
-      print('✅ [BUDGET WITHDRAWAL] ${response.statusCode}: ${response.data}');
+      print('✅ [SAHARA WITHDRAWAL] ${response.statusCode}: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data as Map<String, dynamic>;
       }
-      throw Exception('Budget withdrawal failed: ${response.statusMessage}');
+      throw Exception('Sahara withdrawal failed: ${response.statusMessage}');
     } on DioException catch (e) {
       print(
-          '❌ [BUDGET WITHDRAWAL] DioException: ${e.response?.data ?? e.message}');
+          '❌ [SAHARA WITHDRAWAL] DioException: ${e.response?.data ?? e.message}');
       final message = _extractErrorMessage(e);
       throw Exception(message);
     }

@@ -7,19 +7,19 @@ import 'package:provider/provider.dart';
 import 'package:iconsax/iconsax.dart';
 import '../providers/user_provider.dart';
 import '../widgets/custom_text_field.dart';
-import '../services/budget_contract_service.dart';
-import '../models/budget_contract_model.dart';
+import '../services/sahara_contract_service.dart';
+import '../models/sahara_contract_model.dart';
 import '../utils/custom_snackbar.dart';
 
-class CreateBudgetContractScreen extends StatefulWidget {
-  const CreateBudgetContractScreen({super.key});
+class CreateSaharaContractScreen extends StatefulWidget {
+  const CreateSaharaContractScreen({super.key});
 
   @override
-  State<CreateBudgetContractScreen> createState() =>
-      _CreateBudgetContractScreenState();
+  State<CreateSaharaContractScreen> createState() =>
+      _CreateSaharaContractScreenState();
 }
 
-class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
+class _CreateSaharaContractScreenState extends State<CreateSaharaContractScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   ContractType _selectedContractType = ContractType.negotiable;
@@ -31,7 +31,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
   int _selectedContractDays = 0;
   int _selectedContractHours = 0;
   int _selectedContractMinutes = 0;
-  final _budgetContractService = BudgetContractService();
+  final _saharaContractService = SaharaContractService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -57,7 +57,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
     super.dispose();
   }
 
-  Future<void> _createBudgetContract() async {
+  Future<void> _createSaharaContract() async {
     if (_formKey.currentState!.validate()) {
       // Validate contract term for non-negotiable contracts
       if (_selectedContractType == ContractType.nonNegotiable) {
@@ -94,7 +94,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
           }
         }
 
-        await _budgetContractService.createBudgetContract(
+        await _saharaContractService.createSaharaContract(
           userId: user.id,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -108,7 +108,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
         if (mounted) {
           CustomSnackBar.show(
             context: context,
-            message: 'Budget contract created successfully',
+            message: 'Sahara contract created successfully',
             type: SnackBarType.success,
           );
           Navigator.pop(context);
@@ -137,7 +137,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'Create Budget Contract',
+                                'Create Sahara Contract',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 20,
@@ -378,7 +378,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
 
                 const SizedBox(height: 32),
 
-                // Budget Contract Details
+                // Sahara Contract Details
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -412,7 +412,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Budget Contract Details',
+                                  'Sahara Contract Details',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -422,7 +422,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Define the terms and budget amount',
+                                  'Define the terms and sahara amount',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey[600],
@@ -472,8 +472,8 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                       const SizedBox(height: 20),
                       CustomTextField(
                         controller: _amountController,
-                        label: 'Budget Amount (TZS)',
-                        hint: 'Enter the total budget amount',
+                        label: 'Sahara Amount (TZS)',
+                        hint: 'Enter the total sahara amount',
                         prefixIcon:
                             const Icon(Iconsax.money_send, color: Colors.grey),
                         keyboardType: TextInputType.number,
@@ -519,7 +519,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                     ),
                   ),
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _createBudgetContract,
+                    onPressed: _isLoading ? null : _createSaharaContract,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -562,7 +562,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Create Budget Contract',
+          'Create Sahara Contract',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -598,7 +598,7 @@ class _CreateBudgetContractScreenState extends State<CreateBudgetContractScreen>
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your budget contract will be created. Funds can be added later.',
+                          'Your sahara contract will be created. Funds can be added later.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blue[700],

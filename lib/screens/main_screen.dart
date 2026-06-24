@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:iconsax/iconsax.dart';
 import 'dashboard_screen.dart';
 import 'home_screen.dart';
-import 'budgets_screen.dart';
+import 'sahara_screen.dart';
 import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -28,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _switchToBudgets() {
+  void _switchToSahara() {
     setState(() {
       _currentIndex = 2;
     });
@@ -37,10 +37,10 @@ class _MainScreenState extends State<MainScreen> {
   List<Widget> get _screens => [
         DashboardScreen(
           onContractsTap: _switchToContracts,
-          onBudgetsTap: _switchToBudgets,
+          onSaharaTap: _switchToSahara,
         ),
         HomeScreen(onProfileTap: _switchToProfile),
-        const BudgetsScreen(),
+        const SaharaScreen(),
         const ProfileScreen(),
       ];
 
@@ -73,7 +73,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Iconsax.wallet_3),
-            label: 'Budgets',
+            label: 'Sahara',
           ),
           BottomNavigationBarItem(
             icon: Icon(Iconsax.profile_circle),

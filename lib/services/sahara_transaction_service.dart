@@ -1,36 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/budget_transaction_model.dart';
+import '../models/sahara_transaction_model.dart';
 
-/// Reads budget transaction records from Firestore (written by the backend).
-class BudgetTransactionService {
+/// Reads sahara transaction records from Firestore (written by the backend).
+class SaharaTransactionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Real-time stream of all transactions for a given budget (newest first).
-  Stream<List<BudgetTransactionModel>> getBudgetTransactions(String budgetId) {
+  /// Real-time stream of all transactions for a given sahara (newest first).
+  Stream<List<SaharaTransactionModel>> getSaharaTransactions(String budgetId) {
     return _firestore
         .collection('budget_transactions')
         .where('budgetId', isEqualTo: budgetId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs
-            .map((doc) => BudgetTransactionModel.fromMap(doc.data(), doc.id))
+            .map((doc) => SaharaTransactionModel.fromMap(doc.data(), doc.id))
             .toList());
   }
 
-  /// Fetch all transactions for a user across all their budgets.
-  Stream<List<BudgetTransactionModel>> getUserBudgetTransactions(String ownerId) {
+  /// Fetch all transactions for a user across all their sahara contracts.
+  Stream<List<SaharaTransactionModel>> getUserSaharaTransactions(String ownerId) {
     return _firestore
         .collection('budget_transactions')
         .where('ownerId', isEqualTo: ownerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs
-            .map((doc) => BudgetTransactionModel.fromMap(doc.data(), doc.id))
+            .map((doc) => SaharaTransactionModel.fromMap(doc.data(), doc.id))
             .toList());
   }
 
-  /// One-time fetch for the latest deposit or withdrawal for a budget.
-  Future<BudgetTransactionModel?> getLatestTransaction(String budgetId) async {
+  /// One-time fetch for the latest deposit or withdrawal for a sahara contract.
+  Future<SaharaTransactionModel?> getLatestTransaction(String budgetId) async {
     final snap = await _firestore
         .collection('budget_transactions')
         .where('budgetId', isEqualTo: budgetId)
@@ -39,11 +39,11 @@ class BudgetTransactionService {
         .get();
 
     if (snap.docs.isEmpty) return null;
-    return BudgetTransactionModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
+    return SaharaTransactionModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
   }
 
   /// Poll until a specific transaction (by depositId or withdrawalId) reaches a terminal status.
-  Future<BudgetTransactionModel?> pollTransactionStatus({
+  Future<SaharaTransactionModel?> pollTransactionStatus({
     required String budgetId,
     required String transactionId,
     required bool isDeposit,
@@ -62,9 +62,9 @@ class BudgetTransactionService {
           .get();
 
       if (snap.docs.isNotEmpty) {
-        final tx = BudgetTransactionModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
-        if (tx.status == BudgetTransactionStatus.completed ||
-            tx.status == BudgetTransactionStatus.failed) {
+        final tx = SaharaTransactionModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
+        if (tx.status == SaharaTransactionStatus.completed ||
+            tx.status == SaharaTransactionStatus.failed) {
           return tx;
         }
       }

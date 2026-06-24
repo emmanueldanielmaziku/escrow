@@ -8,6 +8,7 @@ import '../models/contract_model.dart';
 import '../providers/user_provider.dart';
 import '../services/contract_service.dart';
 import '../services/payment_service.dart';
+import '../services/network_service.dart';
 import '../utils/custom_snackbar.dart';
 import '../widgets/contract_summary_bottom_sheet.dart';
 
@@ -53,6 +54,7 @@ class _FundContractScreenState extends State<FundContractScreen> {
   @override
   void initState() {
     super.initState();
+    NetworkService().startMonitoring();
   }
 
   Future<void> _handlePaste() async {
@@ -182,20 +184,16 @@ class _FundContractScreenState extends State<FundContractScreen> {
   }
 
   Future<void> _monitorContractStatus() async {
-    const maxWaitTime = Duration(seconds: 60);
     const checkInterval = Duration(seconds: 2);
-    final startTime = DateTime.now();
 
-    while (DateTime.now().difference(startTime) < maxWaitTime) {
+    while (true) {
       try {
         final contract =
             await _contractService.getContractDetails(widget.contract.id);
         if (contract?.status == 'active') {
-          // Contract is now active, notify both parties (only once)
           if (!_hasNotifiedActivation) {
             _hasNotifiedActivation = true;
             try {
-              // Send notifications to both remitter and beneficiary
               await _contractService
                   .notifyContractActivated(widget.contract.id);
               if (kDebugMode) {
@@ -208,31 +206,25 @@ class _FundContractScreenState extends State<FundContractScreen> {
             }
           }
 
-          // Contract is now active, show success overlay
           if (mounted) {
             setState(() {
               _isSuccess = true;
             });
-            // Show success message for 2 seconds
             await Future.delayed(const Duration(seconds: 2));
 
-            // Close overlay first
             if (mounted) {
               setState(() {
                 _showOverlay = false;
               });
 
-              // Wait a bit for overlay to close smoothly
               await Future.delayed(const Duration(milliseconds: 300));
 
-              // Show receipt bottom sheet
               if (mounted) {
                 await ContractSummaryBottomSheet.showReceipt(
                   context: context,
                   contract: contract!,
                 );
 
-                // Close the fund contract screen after receipt is closed
                 if (mounted) {
                   Navigator.pop(context);
                 }
@@ -246,13 +238,6 @@ class _FundContractScreenState extends State<FundContractScreen> {
       }
 
       await Future.delayed(checkInterval);
-    }
-
-    // Timeout reached, close overlay
-    if (mounted) {
-      setState(() {
-        _showOverlay = false;
-      });
     }
   }
 
@@ -630,6 +615,43 @@ class _FundContractScreenState extends State<FundContractScreen> {
           ),
         ),
         if (_showOverlay) _buildOverlay(),
+        StreamBuilder<bool>(
+          stream: NetworkService().onConnectivityChanged,
+          initialData: true,
+          builder: (context, snapshot) {
+            final connected = snapshot.data ?? true;
+            if (connected) return const SizedBox.shrink();
+            return Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Material(
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    bottom: 8,
+                    left: 16,
+                    right: 16,
+                  ),
+                  color: Colors.orange.shade700,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No internet connection. Payment may fail.',
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }

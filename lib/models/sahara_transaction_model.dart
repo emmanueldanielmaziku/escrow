@@ -1,17 +1,17 @@
-enum BudgetTransactionType { deposit, withdrawal }
+enum SaharaTransactionType { deposit, withdrawal }
 
-enum BudgetTransactionStatus { pending, processing, completed, failed }
+enum SaharaTransactionStatus { pending, processing, completed, failed }
 
-class BudgetTransactionModel {
+class SaharaTransactionModel {
   final String id;
   final String budgetId;
   final String ownerId;
-  final BudgetTransactionType type;
+  final SaharaTransactionType type;
   final double amount;
   final double? fee;
   final double? netAmount;
   final String currency;
-  final BudgetTransactionStatus status;
+  final SaharaTransactionStatus status;
   final String msisdn;
   final String channel;
   final String? recipientName;
@@ -22,7 +22,7 @@ class BudgetTransactionModel {
   final DateTime createdAt;
   final DateTime? completedAt;
 
-  const BudgetTransactionModel({
+  const SaharaTransactionModel({
     required this.id,
     required this.budgetId,
     required this.ownerId,
@@ -43,29 +43,29 @@ class BudgetTransactionModel {
     this.completedAt,
   });
 
-  static BudgetTransactionType _typeFromString(String? s) {
+  static SaharaTransactionType _typeFromString(String? s) {
     switch (s) {
       case 'withdrawal':
-        return BudgetTransactionType.withdrawal;
+        return SaharaTransactionType.withdrawal;
       default:
-        return BudgetTransactionType.deposit;
+        return SaharaTransactionType.deposit;
     }
   }
 
-  static BudgetTransactionStatus _statusFromString(String? s) {
+  static SaharaTransactionStatus _statusFromString(String? s) {
     switch (s) {
       case 'processing':
-        return BudgetTransactionStatus.processing;
+        return SaharaTransactionStatus.processing;
       case 'completed':
-        return BudgetTransactionStatus.completed;
+        return SaharaTransactionStatus.completed;
       case 'failed':
-        return BudgetTransactionStatus.failed;
+        return SaharaTransactionStatus.failed;
       default:
-        return BudgetTransactionStatus.pending;
+        return SaharaTransactionStatus.pending;
     }
   }
 
-  factory BudgetTransactionModel.fromMap(Map<String, dynamic> map, String docId) {
+  factory SaharaTransactionModel.fromMap(Map<String, dynamic> map, String docId) {
     DateTime parseDate(dynamic v) {
       if (v == null) return DateTime.now();
       if (v is DateTime) return v;
@@ -77,7 +77,7 @@ class BudgetTransactionModel {
       return DateTime.now();
     }
 
-    return BudgetTransactionModel(
+    return SaharaTransactionModel(
       id: docId,
       budgetId: map['budgetId'] as String? ?? '',
       ownerId: map['ownerId'] as String? ?? '',
@@ -99,25 +99,25 @@ class BudgetTransactionModel {
     );
   }
 
-  String get typeLabel => type == BudgetTransactionType.deposit ? 'Deposit' : 'Withdrawal';
+  String get typeLabel => type == SaharaTransactionType.deposit ? 'Deposit' : 'Withdrawal';
 
   String get statusLabel {
     switch (status) {
-      case BudgetTransactionStatus.pending:
+      case SaharaTransactionStatus.pending:
         return 'Pending';
-      case BudgetTransactionStatus.processing:
+      case SaharaTransactionStatus.processing:
         return 'Processing';
-      case BudgetTransactionStatus.completed:
+      case SaharaTransactionStatus.completed:
         return 'Completed';
-      case BudgetTransactionStatus.failed:
+      case SaharaTransactionStatus.failed:
         return 'Failed';
     }
   }
 
-  bool get isDeposit => type == BudgetTransactionType.deposit;
-  bool get isWithdrawal => type == BudgetTransactionType.withdrawal;
-  bool get isCompleted => status == BudgetTransactionStatus.completed;
-  bool get isFailed => status == BudgetTransactionStatus.failed;
-  bool get isPending => status == BudgetTransactionStatus.pending || status == BudgetTransactionStatus.processing;
+  bool get isDeposit => type == SaharaTransactionType.deposit;
+  bool get isWithdrawal => type == SaharaTransactionType.withdrawal;
+  bool get isCompleted => status == SaharaTransactionStatus.completed;
+  bool get isFailed => status == SaharaTransactionStatus.failed;
+  bool get isPending => status == SaharaTransactionStatus.pending || status == SaharaTransactionStatus.processing;
 }
 

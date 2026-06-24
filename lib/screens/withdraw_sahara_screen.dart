@@ -3,31 +3,31 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
-import '../models/budget_contract_model.dart';
-import '../models/budget_transaction_model.dart';
+import '../models/sahara_contract_model.dart';
+import '../models/sahara_transaction_model.dart';
 import '../providers/user_provider.dart';
-import '../services/budget_contract_service.dart';
-import '../services/budget_payment_service.dart';
-import '../services/budget_transaction_service.dart';
+import '../services/sahara_contract_service.dart';
+import '../services/sahara_payment_service.dart';
+import '../services/sahara_transaction_service.dart';
 import '../services/payment_service.dart';
 import '../utils/custom_snackbar.dart';
 
-class WithdrawBudgetScreen extends StatefulWidget {
-  final BudgetContractModel budget;
+class WithdrawSaharaScreen extends StatefulWidget {
+  final SaharaContractModel sahara;
 
-  const WithdrawBudgetScreen({
+  const WithdrawSaharaScreen({
     super.key,
-    required this.budget,
+    required this.sahara,
   });
 
   @override
-  State<WithdrawBudgetScreen> createState() => _WithdrawBudgetScreenState();
+  State<WithdrawSaharaScreen> createState() => _WithdrawSaharaScreenState();
 }
 
-class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
-  final _budgetPaymentService = BudgetPaymentService();
-  final _budgetService = BudgetContractService();
-  final _transactionService = BudgetTransactionService();
+class _WithdrawSaharaScreenState extends State<WithdrawSaharaScreen> {
+  final _saharaPaymentService = SaharaPaymentService();
+  final _saharaService = SaharaContractService();
+  final _transactionService = SaharaTransactionService();
 
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
@@ -53,7 +53,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
     'Mpesa': 'Mpesa',
   };
 
-  double get _maxAmount => widget.budget.fundedAmount;
+  double get _maxAmount => widget.sahara.fundedAmount;
 
   @override
   void initState() {
@@ -80,7 +80,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   String _getAmountDisplay() {
     final v = double.tryParse(_amountController.text.trim());
     if (v == null || v <= 0) {
-      return widget.budget.fundedAmount.toStringAsFixed(2);
+      return widget.sahara.fundedAmount.toStringAsFixed(2);
     }
     return v.toStringAsFixed(2);
   }
@@ -99,19 +99,19 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       _snack('Please enter a valid amount');
       return;
     }
-    if (amount > widget.budget.fundedAmount) {
+    if (amount > widget.sahara.fundedAmount) {
       _snack(
-          'Amount exceeds available funds (TSh ${widget.budget.fundedAmount.toStringAsFixed(2)})');
+          'Amount exceeds available funds (TSh ${widget.sahara.fundedAmount.toStringAsFixed(2)})');
       return;
     }
 
     // Guard: non-negotiable contract term check (UI side)
-    if (widget.budget.contractType == ContractType.nonNegotiable &&
-        widget.budget.contractEndDate != null &&
-        DateTime.now().isBefore(widget.budget.contractEndDate!)) {
+    if (widget.sahara.contractType == ContractType.nonNegotiable &&
+        widget.sahara.contractEndDate != null &&
+        DateTime.now().isBefore(widget.sahara.contractEndDate!)) {
       _snack(
         'Withdrawal not allowed until contract term ends: '
-        '${_formatDate(widget.budget.contractEndDate!)}',
+        '${_formatDate(widget.sahara.contractEndDate!)}',
         error: true,
       );
       return;
@@ -188,15 +188,15 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       final String msisdn = _formatPhoneNumber(rawMsisdn, _mobileProvider);
       final provider = _mobileProvider;
 
-      final response = await _budgetPaymentService.initiateBudgetWithdrawal(
-        budgetId: widget.budget.id,
+      final response = await _saharaPaymentService.initiateSaharaWithdrawal(
+        budgetId: widget.sahara.id,
         amount: amount,
         ownerId: user.id,
         msisdn: msisdn,
         channel: 'mobile',
         recipientName:
-            user.fullName.isNotEmpty ? user.fullName : 'Budget Owner',
-        narration: 'Withdrawal from: ${widget.budget.title}',
+            user.fullName.isNotEmpty ? user.fullName : 'Sahara Owner',
+        narration: 'Withdrawal from: ${widget.sahara.title}',
         provider: provider,
       );
 
@@ -284,10 +284,10 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
 
     while (DateTime.now().isBefore(deadline)) {
       try {
-        final budget =
-            await _budgetService.getBudgetContractDetails(widget.budget.id);
-        if (budget != null &&
-            budget.fundedAmount < widget.budget.fundedAmount) {
+        final sahara =
+            await _saharaService.getSaharaContractDetails(widget.sahara.id);
+        if (sahara != null &&
+            sahara.fundedAmount < widget.sahara.fundedAmount) {
           _showSuccess();
           return;
         }
@@ -296,17 +296,17 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
       if (withdrawalId != null) {
         try {
           final tx = await _transactionService.pollTransactionStatus(
-            budgetId: widget.budget.id,
+            budgetId: widget.sahara.id,
             transactionId: withdrawalId,
             isDeposit: false,
             timeout: const Duration(seconds: 2),
             interval: const Duration(milliseconds: 500),
           );
           if (tx != null) {
-            if (tx.status == BudgetTransactionStatus.completed) {
+            if (tx.status == SaharaTransactionStatus.completed) {
               _showSuccess();
               return;
-            } else if (tx.status == BudgetTransactionStatus.failed) {
+            } else if (tx.status == SaharaTransactionStatus.failed) {
               _showFailure();
               return;
             }
@@ -436,7 +436,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
   // ──────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final fundedAmount = widget.budget.fundedAmount;
+    final fundedAmount = widget.sahara.fundedAmount;
 
     return Stack(
       children: [
@@ -557,11 +557,11 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Non-negotiable warning ──
-                      if (widget.budget.contractType ==
+                      if (widget.sahara.contractType ==
                               ContractType.nonNegotiable &&
-                          widget.budget.contractEndDate != null &&
+                          widget.sahara.contractEndDate != null &&
                           DateTime.now()
-                              .isBefore(widget.budget.contractEndDate!))
+                              .isBefore(widget.sahara.contractEndDate!))
                         Container(
                           margin: const EdgeInsets.only(bottom: 20),
                           padding: const EdgeInsets.all(14),
@@ -577,7 +577,7 @@ class _WithdrawBudgetScreenState extends State<WithdrawBudgetScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Non-negotiable contract. Withdrawal allowed after:\n${_formatDate(widget.budget.contractEndDate!)}',
+                                  'Non-negotiable contract. Withdrawal allowed after:\n${_formatDate(widget.sahara.contractEndDate!)}',
                                   style: TextStyle(
                                       fontSize: 12, color: Colors.orange[800]),
                                 ),

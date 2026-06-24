@@ -5,29 +5,29 @@ import 'package:random_avatar/random_avatar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import '../providers/user_provider.dart';
-import '../models/budget_contract_model.dart';
-import '../services/budget_contract_service.dart';
-import 'create_budget_contract_screen.dart';
-import 'fund_budget_screen.dart';
-import 'withdraw_budget_screen.dart';
+import '../models/sahara_contract_model.dart';
+import '../services/sahara_contract_service.dart';
+import 'create_sahara_contract_screen.dart';
+import 'fund_sahara_screen.dart';
+import 'withdraw_sahara_screen.dart';
 
-class BudgetsScreen extends StatefulWidget {
-  const BudgetsScreen({super.key});
+class SaharaScreen extends StatefulWidget {
+  const SaharaScreen({super.key});
 
   @override
-  State<BudgetsScreen> createState() => _BudgetsScreenState();
+  State<SaharaScreen> createState() => _SaharaScreenState();
 }
 
-class _BudgetsScreenState extends State<BudgetsScreen> {
+class _SaharaScreenState extends State<SaharaScreen> {
   final ScrollController _scrollController = ScrollController();
-  final BudgetContractService _budgetContractService = BudgetContractService();
+  final SaharaContractService _saharaContractService = SaharaContractService();
   Timer? _timer;
-  Stream<List<BudgetContractModel>>? _budgetStream;
+  Stream<List<SaharaContractModel>>? _saharaStream;
 
   // Filter states
   String _sortOrder = 'latest';
   ContractType? _filterContractType;
-  BudgetContractStatus? _filterStatus;
+  SaharaContractStatus? _filterStatus;
 
   @override
   void initState() {
@@ -35,8 +35,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     // Initialize stream once (same pattern as Contract module)
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userId = userProvider.user?.id ?? '';
-    _budgetStream =
-        _budgetContractService.getAuthenticatedUserBudgetContracts(userId);
+    _saharaStream =
+        _saharaContractService.getAuthenticatedUserSaharaContracts(userId);
 
     // Update timer every second for countdown
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -53,9 +53,9 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     super.dispose();
   }
 
-  List<BudgetContractModel> _filterContracts(
-      List<BudgetContractModel> contracts) {
-    var filtered = List<BudgetContractModel>.from(contracts);
+  List<SaharaContractModel> _filterContracts(
+      List<SaharaContractModel> contracts) {
+    var filtered = List<SaharaContractModel>.from(contracts);
 
     // Filter by contract type
     if (_filterContractType != null) {
@@ -97,34 +97,34 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
   }
 
-  void _showAddFundsDialog(BudgetContractModel contract) {
+  void _showAddFundsDialog(SaharaContractModel contract) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FundBudgetScreen(
-          budget: contract,
+        builder: (context) => FundSaharaScreen(
+          sahara: contract,
         ),
       ),
     );
   }
 
-  void _showWithdrawDialog(BudgetContractModel contract) {
+  void _showWithdrawDialog(SaharaContractModel contract) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WithdrawBudgetScreen(budget: contract),
+        builder: (context) => WithdrawSaharaScreen(sahara: contract),
       ),
     );
   }
 
-  void _showCloseContractDialog(BudgetContractModel contract) {
+  void _showCloseContractDialog(SaharaContractModel contract) {
     // Always allow closing unfunded contracts
-    // Prevent closing if budget is 100% funded (except unfunded status)
-    if (contract.status != BudgetContractStatus.unfunded &&
+    // Prevent closing if sahara is 100% funded (except unfunded status)
+    if (contract.status != SaharaContractStatus.unfunded &&
         contract.isFullyFunded) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cannot close contract when budget is 100% funded'),
+          content: Text('Cannot close contract when sahara is 100% funded'),
           backgroundColor: Colors.red,
         ),
       );
@@ -171,7 +171,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await _budgetContractService.deleteBudgetContract(contract.id);
+                await _saharaContractService.deleteSaharaContract(contract.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -217,14 +217,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
 
     // Use cached stream initialized in initState (same pattern as Contract module)
-    final budgetStream = _budgetStream ??
-        _budgetContractService
-            .getAuthenticatedUserBudgetContracts(user?.id ?? '');
+    final saharaStream = _saharaStream ??
+        _saharaContractService
+            .getAuthenticatedUserSaharaContracts(user?.id ?? '');
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: StreamBuilder<List<BudgetContractModel>>(
-        stream: budgetStream,
+      body: StreamBuilder<List<SaharaContractModel>>(
+        stream: saharaStream,
         builder: (context, streamSnapshot) {
           final allContracts = streamSnapshot.data ?? [];
           final filteredContracts = _filterContracts(allContracts);
@@ -268,7 +268,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Budgeting Feature',
+                                    'Sahara',
                                     style:
                                         theme.textTheme.titleMedium?.copyWith(
                                       fontSize: 14.0,
@@ -295,7 +295,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const CreateBudgetContractScreen(),
+                                    const CreateSaharaContractScreen(),
                               ),
                             );
                           },
@@ -354,7 +354,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Budget Contracts',
+                            'Sahara Contracts',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: Colors.black87.withValues(alpha: 0.7),
                             ),
@@ -380,14 +380,14 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 } else if (value == 'all_status') {
                                   _filterStatus = null;
                                 } else if (value == 'active') {
-                                  _filterStatus = BudgetContractStatus.active;
+                                  _filterStatus = SaharaContractStatus.active;
                                 } else if (value == 'in_progress') {
                                   _filterStatus =
-                                      BudgetContractStatus.inProgress;
+                                      SaharaContractStatus.inProgress;
                                 } else if (value == 'sahara') {
-                                  _filterStatus = BudgetContractStatus.sahara;
+                                  _filterStatus = SaharaContractStatus.sahara;
                                 } else if (value == 'unfunded') {
-                                  _filterStatus = BudgetContractStatus.unfunded;
+                                  _filterStatus = SaharaContractStatus.unfunded;
                                 } else if (value == 'clear_all') {
                                   _filterContractType = null;
                                   _filterStatus = null;
@@ -540,7 +540,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                       Iconsax.tick_circle,
                                       size: 18,
                                       color: _filterStatus ==
-                                              BudgetContractStatus.active
+                                              SaharaContractStatus.active
                                           ? Colors.green
                                           : Colors.grey[600],
                                     ),
@@ -557,7 +557,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                       Iconsax.wallet_3,
                                       size: 18,
                                       color: _filterStatus ==
-                                              BudgetContractStatus.sahara
+                                              SaharaContractStatus.sahara
                                           ? Colors.blue
                                           : Colors.grey[600],
                                     ),
@@ -574,7 +574,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                       Iconsax.money_recive,
                                       size: 18,
                                       color: _filterStatus ==
-                                              BudgetContractStatus.inProgress
+                                              SaharaContractStatus.inProgress
                                           ? Colors.orange
                                           : Colors.grey[600],
                                     ),
@@ -591,7 +591,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                       Iconsax.wallet_1,
                                       size: 18,
                                       color: _filterStatus ==
-                                              BudgetContractStatus.unfunded
+                                              SaharaContractStatus.unfunded
                                           ? Colors.orange
                                           : Colors.grey[600],
                                     ),
@@ -631,7 +631,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
               Expanded(
                 child: streamSnapshot.connectionState == ConnectionState.waiting
                     ? Center(
-                        child: _buildBudgetsLoadingShimmer(context),
+                        child: _buildSaharaLoadingShimmer(context),
                       )
                     : streamSnapshot.hasError
                         ? Center(
@@ -645,7 +645,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Error loading budgets',
+                                  'Error loading sahara contracts',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
@@ -671,7 +671,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                                 padding: const EdgeInsets.all(16),
                                 itemCount: filteredContracts.length,
                                 itemBuilder: (context, index) {
-                                  return _buildBudgetContractCard(
+                                  return _buildSaharaContractCard(
                                       filteredContracts[index]);
                                 },
                               ),
@@ -697,7 +697,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No Budget Contracts Yet',
+              'No Sahara Contracts Yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -706,7 +706,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Create your first budget contract to start managing your funds',
+              'Create your first sahara contract to start managing your funds',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -719,13 +719,13 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CreateBudgetContractScreen(),
+                    builder: (context) => const CreateSaharaContractScreen(),
                   ),
                 );
               },
               icon: const Icon(Iconsax.add),
               label: const Text(
-                'Create Budget Contract',
+                'Create Sahara Contract',
                 style: TextStyle(fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
@@ -746,11 +746,11 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildBudgetContractCard(BudgetContractModel contract) {
-    final statusColor = BudgetContractModel.getStatusColor(contract.status);
-    final statusText = BudgetContractModel.getStatusText(contract.status);
+  Widget _buildSaharaContractCard(SaharaContractModel contract) {
+    final statusColor = SaharaContractModel.getStatusColor(contract.status);
+    final statusText = SaharaContractModel.getStatusText(contract.status);
     final contractTypeText =
-        BudgetContractModel.getContractTypeText(contract.contractType);
+        SaharaContractModel.getContractTypeText(contract.contractType);
     final progress =
         contract.amount > 0 ? contract.fundedAmount / contract.amount : 0.0;
 
@@ -950,7 +950,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             child: Row(
               children: [
                 // Unfunded: Add Funds + close
-                if (contract.status == BudgetContractStatus.unfunded) ...[
+                if (contract.status == SaharaContractStatus.unfunded) ...[
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _showAddFundsDialog(contract),
@@ -975,7 +975,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   ),
                 ]
                 // In Progress + non-negotiable: only Add Funds (no close)
-                else if (contract.status == BudgetContractStatus.inProgress &&
+                else if (contract.status == SaharaContractStatus.inProgress &&
                     contract.contractType == ContractType.nonNegotiable) ...[
                   Expanded(
                     child: ElevatedButton.icon(
@@ -995,7 +995,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 ]
                 // In Progress + negotiable: Add Funds + close
                 else if (contract.status ==
-                    BudgetContractStatus.inProgress) ...[
+                    SaharaContractStatus.inProgress) ...[
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _showAddFundsDialog(contract),
@@ -1020,7 +1020,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   ),
                 ]
                 // Active: Add Funds (if not full) + Withdraw, no close
-                else if (contract.status == BudgetContractStatus.active) ...[
+                else if (contract.status == SaharaContractStatus.active) ...[
                   // Add Funds button (if not fully funded)
                   if (!contract.isFullyFunded)
                     Expanded(
@@ -1084,7 +1084,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     );
   }
 
-  Widget _buildBudgetsLoadingShimmer(BuildContext context) {
+  Widget _buildSaharaLoadingShimmer(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,

@@ -5,27 +5,27 @@ enum ContractType {
   nonNegotiable, // Cannot be terminated before term
 }
 
-enum BudgetContractStatus {
+enum SaharaContractStatus {
   active,
   inProgress, // Partially funded, not yet fully funded
   sahara, // Completed/closed state
   unfunded,
 }
 
-class BudgetContractModel {
+class SaharaContractModel {
   final String id;
   final String title;
   final String description;
   final double amount;
   final double fundedAmount;
   final ContractType contractType;
-  final BudgetContractStatus status;
+  final SaharaContractStatus status;
   final DateTime createdAt;
   final DateTime? contractEndDate; // For non-negotiable contracts (calculated from contractTerm)
-  final String ownerId; // Budget owner/creator (required - budgets have single owner)
-  final String ownerName; // Budget owner/creator name (required)
+  final String ownerId; // Sahara owner/creator (required - sahara contracts have single owner)
+  final String ownerName; // Sahara owner/creator name (required)
 
-  BudgetContractModel({
+  SaharaContractModel({
     required this.id,
     required this.title,
     required this.description,
@@ -55,28 +55,28 @@ class BudgetContractModel {
     return contractEndDate!.difference(now);
   }
 
-  static Color getStatusColor(BudgetContractStatus status) {
+  static Color getStatusColor(SaharaContractStatus status) {
     switch (status) {
-      case BudgetContractStatus.active:
+      case SaharaContractStatus.active:
         return Colors.green;
-      case BudgetContractStatus.inProgress:
+      case SaharaContractStatus.inProgress:
         return Colors.orange;
-      case BudgetContractStatus.sahara:
+      case SaharaContractStatus.sahara:
         return Colors.blue;
-      case BudgetContractStatus.unfunded:
+      case SaharaContractStatus.unfunded:
         return Colors.orange;
     }
   }
 
-  static String getStatusText(BudgetContractStatus status) {
+  static String getStatusText(SaharaContractStatus status) {
     switch (status) {
-      case BudgetContractStatus.active:
+      case SaharaContractStatus.active:
         return 'Active';
-      case BudgetContractStatus.inProgress:
+      case SaharaContractStatus.inProgress:
         return 'In Progress';
-      case BudgetContractStatus.sahara:
+      case SaharaContractStatus.sahara:
         return 'Sahara';
-      case BudgetContractStatus.unfunded:
+      case SaharaContractStatus.unfunded:
         return 'Unfunded';
     }
   }
@@ -106,8 +106,8 @@ class BudgetContractModel {
     };
   }
 
-  factory BudgetContractModel.fromMap(Map<String, dynamic> map) {
-    return BudgetContractModel(
+  factory SaharaContractModel.fromMap(Map<String, dynamic> map) {
+    return SaharaContractModel(
       id: map['id'] as String,
       title: map['title'] as String,
       description: map['description'] as String,
@@ -119,16 +119,16 @@ class BudgetContractModel {
       ),
       status: () {
         final s = map['status'];
-        if (s == 'inProgress' || s == 'in_progress') return BudgetContractStatus.inProgress;
-        final parsed = BudgetContractStatus.values.firstWhere(
+        if (s == 'inProgress' || s == 'in_progress') return SaharaContractStatus.inProgress;
+        final parsed = SaharaContractStatus.values.firstWhere(
           (e) => e.name == map['status'],
-          orElse: () => BudgetContractStatus.unfunded,
+          orElse: () => SaharaContractStatus.unfunded,
         );
         // Backward compatibility: partially funded but stored as unfunded → show as inProgress
-        if (parsed == BudgetContractStatus.unfunded) {
+        if (parsed == SaharaContractStatus.unfunded) {
           final amt = (map['amount'] as num?)?.toDouble();
           final funded = (map['fundedAmount'] as num?)?.toDouble() ?? 0.0;
-          if (amt != null && funded > 0 && funded < amt) return BudgetContractStatus.inProgress;
+          if (amt != null && funded > 0 && funded < amt) return SaharaContractStatus.inProgress;
         }
         return parsed;
       }(),

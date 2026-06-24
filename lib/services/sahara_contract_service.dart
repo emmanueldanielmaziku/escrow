@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/budget_contract_model.dart';
+import '../models/sahara_contract_model.dart';
 
-class BudgetContractService {
+class SaharaContractService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Create a new budget contract
-  Future<BudgetContractModel> createBudgetContract({
+  // Create a new sahara contract
+  Future<SaharaContractModel> createSaharaContract({
     required String userId,
     required String title,
     required String description,
@@ -24,14 +24,14 @@ class BudgetContractService {
         contractEndDate = DateTime.now().add(contractTerm);
       }
 
-      final budgetContract = BudgetContractModel(
+      final saharaContract = SaharaContractModel(
         id: _firestore.collection('budget_contracts').doc().id,
         title: title,
         description: description,
         amount: amount,
         fundedAmount: 0.0,
         contractType: contractType,
-        status: BudgetContractStatus.unfunded,
+        status: SaharaContractStatus.unfunded,
         createdAt: DateTime.now(),
         contractEndDate: contractEndDate,
         ownerId: userId,
@@ -41,25 +41,25 @@ class BudgetContractService {
       // Save to Firestore
       await _firestore
           .collection('budget_contracts')
-          .doc(budgetContract.id)
-          .set(budgetContract.toMap());
+          .doc(saharaContract.id)
+          .set(saharaContract.toMap());
 
-      return budgetContract;
+      return saharaContract;
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating budget contract: $e');
+        print('Error creating sahara contract: $e');
       }
-      throw Exception('Failed to create budget contract: $e');
+      throw Exception('Failed to create sahara contract: $e');
     }
   }
 
-  // Get authenticated user's budget contracts
-  Stream<List<BudgetContractModel>> getAuthenticatedUserBudgetContracts(
+  // Get authenticated user's sahara contracts
+  Stream<List<SaharaContractModel>> getAuthenticatedUserSaharaContracts(
       String userId) {
     if (kDebugMode) {
-      print('🔍 BUDGET SERVICE: Getting budget contracts for user: $userId');
+      print('🔍 SAHARA SERVICE: Getting sahara contracts for user: $userId');
       print(
-          '🔍 BUDGET SERVICE: Query: budget_contracts where ownerId == $userId orderBy createdAt desc');
+          '🔍 SAHARA SERVICE: Query: budget_contracts where ownerId == $userId orderBy createdAt desc');
     }
 
     return _firestore
@@ -69,14 +69,14 @@ class BudgetContractService {
         .snapshots()
         .handleError((error) {
       if (kDebugMode) {
-        print('❌ BUDGET SERVICE STREAM ERROR: $error');
-        print('❌ BUDGET SERVICE ERROR TYPE: ${error.runtimeType}');
-        print('❌ BUDGET SERVICE ERROR DETAILS: ${error.toString()}');
+        print('❌ SAHARA SERVICE STREAM ERROR: $error');
+        print('❌ SAHARA SERVICE ERROR TYPE: ${error.runtimeType}');
+        print('❌ SAHARA SERVICE ERROR DETAILS: ${error.toString()}');
 
         // Check if it's an index error
         if (error.toString().contains('index') ||
             error.toString().contains('indexes')) {
-          print('⚠️ BUDGET SERVICE: Firebase index required!');
+          print('⚠️ SAHARA SERVICE: Firebase index required!');
           print(
               '⚠️ Create composite index: budget_contracts (ownerId, createdAt)');
         }
@@ -84,7 +84,7 @@ class BudgetContractService {
     }).map((snapshot) {
       if (kDebugMode) {
         print(
-            '🔍 BUDGET SERVICE: Snapshot received with ${snapshot.docs.length} documents');
+            '🔍 SAHARA SERVICE: Snapshot received with ${snapshot.docs.length} documents');
       }
 
       final contracts = snapshot.docs
@@ -92,28 +92,28 @@ class BudgetContractService {
             try {
               final data = Map<String, dynamic>.from(doc.data());
               data['id'] ??= doc.id; // ensure id is set when missing from payload
-              return BudgetContractModel.fromMap(data);
+              return SaharaContractModel.fromMap(data);
             } catch (e) {
               if (kDebugMode) {
-                print('❌ BUDGET SERVICE: Error parsing document ${doc.id}: $e');
+                print('❌ SAHARA SERVICE: Error parsing document ${doc.id}: $e');
               }
               return null;
             }
           })
-          .whereType<BudgetContractModel>()
+          .whereType<SaharaContractModel>()
           .toList();
 
       if (kDebugMode) {
         print(
-            '🔍 BUDGET SERVICE: Successfully parsed ${contracts.length} budget contracts');
+            '🔍 SAHARA SERVICE: Successfully parsed ${contracts.length} sahara contracts');
       }
 
       return contracts;
     });
   }
 
-  // Get budget contract details
-  Future<BudgetContractModel?> getBudgetContractDetails(
+  // Get sahara contract details
+  Future<SaharaContractModel?> getSaharaContractDetails(
       String contractId) async {
     try {
       final doc =
@@ -121,33 +121,33 @@ class BudgetContractService {
       if (!doc.exists) return null;
       final data = Map<String, dynamic>.from(doc.data()!);
       data['id'] ??= doc.id;
-      return BudgetContractModel.fromMap(data);
+      return SaharaContractModel.fromMap(data);
     } catch (e) {
-      throw Exception('Failed to get budget contract details: $e');
+      throw Exception('Failed to get sahara contract details: $e');
     }
   }
 
-  // Update budget contract status
-  Future<void> updateBudgetContractStatus(
+  // Update sahara contract status
+  Future<void> updateSaharaContractStatus(
     String contractId,
-    BudgetContractStatus newStatus,
+    SaharaContractStatus newStatus,
   ) async {
     try {
       await _firestore.collection('budget_contracts').doc(contractId).update({
         'status': newStatus.name,
       });
     } catch (e) {
-      throw Exception('Failed to update budget contract status: $e');
+      throw Exception('Failed to update sahara contract status: $e');
     }
   }
 
-  // Add funds to budget contract
+  // Add funds to sahara contract
   Future<void> addFunds(String contractId, double amount) async {
     try {
       final doc =
           await _firestore.collection('budget_contracts').doc(contractId).get();
       if (!doc.exists) {
-        throw Exception('Budget contract not found');
+        throw Exception('Sahara contract not found');
       }
 
       final currentData = doc.data()!;
@@ -162,7 +162,7 @@ class BudgetContractService {
       };
 
       if (newFunded >= totalAmount) {
-        updates['status'] = BudgetContractStatus.active.name;
+        updates['status'] = SaharaContractStatus.active.name;
       }
 
       await _firestore
@@ -174,19 +174,19 @@ class BudgetContractService {
     }
   }
 
-  // Delete budget contract
-  Future<void> deleteBudgetContract(String contractId) async {
+  // Delete sahara contract
+  Future<void> deleteSaharaContract(String contractId) async {
     try {
       await _firestore.collection('budget_contracts').doc(contractId).delete();
       if (kDebugMode) {
         print(
-            '✅ BUDGET SERVICE: Successfully deleted budget contract: $contractId');
+            '✅ SAHARA SERVICE: Successfully deleted sahara contract: $contractId');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ BUDGET SERVICE: Error deleting budget contract: $e');
+        print('❌ SAHARA SERVICE: Error deleting sahara contract: $e');
       }
-      throw Exception('Failed to delete budget contract: $e');
+      throw Exception('Failed to delete sahara contract: $e');
     }
   }
 }

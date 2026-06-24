@@ -3,27 +3,28 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
-import '../models/budget_contract_model.dart';
+import '../models/sahara_contract_model.dart';
 import '../providers/user_provider.dart';
-import '../services/budget_contract_service.dart';
-import '../services/budget_payment_service.dart';
+import '../services/sahara_contract_service.dart';
+import '../services/sahara_payment_service.dart';
+import '../services/network_service.dart';
 import '../utils/custom_snackbar.dart';
 
-class FundBudgetScreen extends StatefulWidget {
-  final BudgetContractModel budget;
+class FundSaharaScreen extends StatefulWidget {
+  final SaharaContractModel sahara;
 
-  const FundBudgetScreen({
+  const FundSaharaScreen({
     super.key,
-    required this.budget,
+    required this.sahara,
   });
 
   @override
-  State<FundBudgetScreen> createState() => _FundBudgetScreenState();
+  State<FundSaharaScreen> createState() => _FundSaharaScreenState();
 }
 
-class _FundBudgetScreenState extends State<FundBudgetScreen> {
-  final _budgetPaymentService = BudgetPaymentService();
-  final _budgetService = BudgetContractService();
+class _FundSaharaScreenState extends State<FundSaharaScreen> {
+  final _saharaPaymentService = SaharaPaymentService();
+  final _saharaService = SaharaContractService();
   final _phoneNumberController = TextEditingController();
   final _phoneFocusNode = FocusNode();
   final _amountController = TextEditingController();
@@ -33,6 +34,8 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   bool _isSuccess = false;
   bool _isFullyFunded = false;
   String _mobileProvider = 'Azampesa';
+  SaharaContractStatus? _baselineStatus;
+  double _baselineFundedAmount = 0;
 
   static const Map<String, String> _mobileProviders = {
     'Airtel': 'Airtel',
@@ -42,7 +45,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
     'Mpesa': 'Mpesa',
   };
 
-  double get _maxAmount => widget.budget.amount - widget.budget.fundedAmount;
+  double get _maxAmount => widget.sahara.amount - widget.sahara.fundedAmount;
 
   @override
   void dispose() {
@@ -57,17 +60,18 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   void initState() {
     super.initState();
     _amountController.text = _maxAmount.toStringAsFixed(2);
+    NetworkService().startMonitoring();
   }
 
   String _getAmountToDisplay() {
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
-      final remainingAmount = widget.budget.amount - widget.budget.fundedAmount;
+      final remainingAmount = widget.sahara.amount - widget.sahara.fundedAmount;
       return remainingAmount.toStringAsFixed(2);
     }
     final amount = double.tryParse(amountText);
     if (amount == null || amount <= 0) {
-      final remainingAmount = widget.budget.amount - widget.budget.fundedAmount;
+      final remainingAmount = widget.sahara.amount - widget.sahara.fundedAmount;
       return remainingAmount.toStringAsFixed(2);
     }
     return amount.toStringAsFixed(2);
@@ -112,7 +116,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       return;
     }
 
-    final remainingAmount = widget.budget.amount - widget.budget.fundedAmount;
+    final remainingAmount = widget.sahara.amount - widget.sahara.fundedAmount;
     if (amount > remainingAmount) {
       CustomSnackBar.show(
         context: context,
@@ -140,15 +144,33 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       final String rawMsisdn = _phoneNumberController.text.trim();
       final String msisdn = _formatPhoneNumber(rawMsisdn, _mobileProvider);
 
-      // Call the new budget-specific endpoint
-      await _budgetPaymentService.initiateBudgetDeposit(
-        budgetId: widget.budget.id,
+      final current = await _saharaService.getSaharaContractDetails(widget.sahara.id);
+      _baselineStatus = current?.status;
+      _baselineFundedAmount = current?.fundedAmount ?? widget.sahara.fundedAmount;
+
+      final response = await _saharaPaymentService.initiateSaharaDeposit(
+        budgetId: widget.sahara.id,
         amount: amount,
         ownerId: user.id,
         msisdn: msisdn,
         provider: _mobileProvider,
-        narration: 'Funding budget: ${widget.budget.title}',
+        narration: 'Funding sahara: ${widget.sahara.title}',
       );
+
+      final inner = response['data'];
+      final apiStatus = inner is Map ? inner['status']?.toString() : null;
+
+      if (apiStatus == 'FAILED') {
+        if (mounted) {
+          setState(() => _isInitiatingPayment = false);
+          CustomSnackBar.show(
+            context: context,
+            message: response['message']?.toString() ?? 'Payment initiation failed. Please try again.',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -214,24 +236,28 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
   }
 
   Future<void> _monitorDepositStatus() async {
-    const timeout = Duration(seconds: 90);
     const interval = Duration(seconds: 3);
-    final deadline = DateTime.now().add(timeout);
 
-    while (DateTime.now().isBefore(deadline)) {
+    while (true) {
       try {
-        // Poll Firestore budget_contracts for status change
-        final budget =
-            await _budgetService.getBudgetContractDetails(widget.budget.id);
+        final sahara =
+            await _saharaService.getSaharaContractDetails(widget.sahara.id);
 
-        if (budget?.status == BudgetContractStatus.active ||
-            budget?.status == BudgetContractStatus.inProgress ||
-            (budget != null &&
-                budget.fundedAmount > widget.budget.fundedAmount)) {
+        if (sahara == null) {
+          await Future.delayed(interval);
+          continue;
+        }
+
+        final fundedIncreased = sahara.fundedAmount > _baselineFundedAmount;
+        final statusUpgraded = _baselineStatus == SaharaContractStatus.unfunded &&
+            (sahara.status == SaharaContractStatus.inProgress ||
+             sahara.status == SaharaContractStatus.active);
+
+        if (fundedIncreased || statusUpgraded) {
           if (mounted) {
             setState(() {
               _isSuccess = true;
-              _isFullyFunded = budget?.status == BudgetContractStatus.active;
+              _isFullyFunded = sahara.status == SaharaContractStatus.active;
             });
             await Future.delayed(const Duration(seconds: 2));
             if (mounted) {
@@ -241,7 +267,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                 Navigator.pop(context);
                 CustomSnackBar.show(
                   context: context,
-                  message: 'Budget funded successfully! 🎉',
+                  message: 'Sahara funded successfully! 🎉',
                   type: SnackBarType.success,
                 );
               }
@@ -252,16 +278,6 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
       } catch (_) {}
 
       await Future.delayed(interval);
-    }
-
-    // Timeout — user can check later; the callback will still update the budget
-    if (mounted) {
-      setState(() => _showOverlay = false);
-      CustomSnackBar.show(
-        context: context,
-        message: 'Payment is being processed. Your budget will update shortly.',
-        type: SnackBarType.info,
-      );
     }
   }
 
@@ -282,7 +298,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Budget Funded Successfully!',
+                  'Sahara Funded Successfully!',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF2E7D32),
@@ -292,7 +308,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _isFullyFunded
-                      ? 'Budget is now active'
+                      ? 'Sahara is now active'
                       : 'Deposit successful',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
@@ -340,7 +356,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
             foregroundColor: Colors.white,
             elevation: 0,
             title: const Text(
-              'Fund Budget',
+              'Fund Sahara',
               style: TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.w700,
@@ -373,7 +389,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
                   child: Column(
                     children: [
-                      // Budget Amount Card
+                      // Sahara Amount Card
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
@@ -409,7 +425,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Current: TSh ${widget.budget.fundedAmount.toStringAsFixed(2)} / TSh ${widget.budget.amount.toStringAsFixed(2)}',
+                              'Current: TSh ${widget.sahara.fundedAmount.toStringAsFixed(2)} / TSh ${widget.sahara.amount.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -496,7 +512,7 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Enter the amount you want to add to this budget',
+                        'Enter the amount you want to add to this sahara',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -746,6 +762,43 @@ class _FundBudgetScreenState extends State<FundBudgetScreen> {
           ),
         ),
         if (_showOverlay) _buildOverlay(),
+        StreamBuilder<bool>(
+          stream: NetworkService().onConnectivityChanged,
+          initialData: true,
+          builder: (context, snapshot) {
+            final connected = snapshot.data ?? true;
+            if (connected) return const SizedBox.shrink();
+            return Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Material(
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    bottom: 8,
+                    left: 16,
+                    right: 16,
+                  ),
+                  color: Colors.orange.shade700,
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No internet connection. Payment may fail.',
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
