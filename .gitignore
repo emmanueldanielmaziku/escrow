@@ -48,3 +48,7 @@ app.*.map.json
 assets/env/service-account-key.json
 **/service-account-key.json
 *.json.key
+
+# Keep environment variables out of version control
+.env
+

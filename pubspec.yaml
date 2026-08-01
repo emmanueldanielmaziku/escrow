@@ -1,9 +1,8 @@
 name: escrow_app
 description: A modern and minimal mobile app MVP for contract escrow system.
 publish_to: "none"
-# version: 1.0.5 ios
-version: 2.0.0
-# version: 2.0.0+12 android
+# version: 2.0.1 ios
+version: 2.0.0+13
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

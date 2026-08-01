@@ -39,6 +39,25 @@ The app includes a comprehensive notification management system that allows user
 - **Notifications**: Firebase Cloud Messaging + Local Notifications
 - **UI**: Material Design with custom theming
 
+## Firebase Integration
+
+This project relies heavily on Firebase for its backend infrastructure, ensuring real-time data synchronization, secure authentication, and robust notifications.
+
+### Firebase Services Used
+- **Firebase Authentication**: Handles secure user registration, login, and password management.
+- **Cloud Firestore**: A NoSQL cloud database used to store all application data and sync it in real-time across connected devices.
+- **Firebase Cloud Messaging (FCM)**: Delivers push notifications for contract updates and system alerts.
+- **Firebase App Check**: Protects backend resources from abuse.
+
+### Firestore Collections Structure
+The database is structured around the following core collections:
+- **`users`**: Stores user profiles, FCM tokens, preferences, and notification settings.
+- **`contracts`**: Contains standard escrow agreements between parties, including terms, involved users, and current status.
+- **`deposits`**: Tracks payment records and fund allocations for active contracts.
+- **`budget_contracts`**: Manages a specialized type of contract (Sahara/Budget contracts).
+- **`budget_transactions`**: Logs individual transactions associated with budget contracts.
+- **`password_resets`**: Temporarily stores password reset requests.
+
 ## Getting Started
 
 1. Clone the repository
